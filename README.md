@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Apex VIP — Premium Trading Platform
 
-## Getting Started
+A full-stack trading community platform for crypto traders. VIP signals,
+trade journal, daily outlook, education hub, analytics, and community.
 
-First, run the development server:
+## Quick Start
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Copy environment variables: `cp .env.example .env`
+4. Fill in your values in `.env`
+5. Push the database: `npx prisma db push`
+6. Seed admin user: `npm run prisma:seed`
+7. Start development server: `npm run dev`
+8. Open: `http://localhost:3000`
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Default Login Credentials (after seed)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Admin: `admin@apexvip.com / admin123`
+VIP member: `vip@apexvip.com / vip123`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Change these passwords immediately after first login.
 
-## Learn More
+## Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS + shadcn/ui
+- Prisma + PostgreSQL
+- NextAuth.js v5
+- Uploadthing (PDF uploads)
+- Resend (transactional email)
+- Recharts (charts)
+- TipTap (rich text notes editor)
+- Framer Motion (animations)
+- React Query (data fetching)
+- Sonner (toast notifications)
+- Zustand (global state)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Environment Variables
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Variable | Required | Description |
+|---|---|---|
+| DATABASE_URL | Yes | PostgreSQL connection string |
+| NEXTAUTH_SECRET | Yes | Random secret for NextAuth |
+| NEXTAUTH_URL | Yes | Base URL of your app |
+| UPLOADTHING_SECRET | No | Uploadthing API secret |
+| UPLOADTHING_APP_ID | No | Uploadthing app ID |
+| RESEND_API_KEY | No | Resend API key for emails |
+| RESEND_FROM_EMAIL | No | From address for emails |
+| NEXT_PUBLIC_CONTACT_LINK | No | WhatsApp or Telegram link for VIP upgrade |
 
-## Deploy on Vercel
+## Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Push code to GitHub
+2. Connect the repo to Vercel
+3. Add all environment variables in the Vercel dashboard
+4. Deploy

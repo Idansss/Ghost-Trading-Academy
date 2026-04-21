@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  VIP
+  MEMBER
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  TRIAL
+}
+
+enum Direction {
+  LONG
+  SHORT
+}
+
+enum TradeOutcome {
+  WIN
+  LOSS
+  BREAKEVEN
+  PENDING
+  CANCELLED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SignalStatus {
+  ACTIVE
+  PENDING
+  WIN
+  LOSS
+  CANCELLED
+  BREAKEVEN
+}
+
+enum MarketBias {
+  BULLISH
+  BEARISH
+  NEUTRAL
+  RANGING
+}
+
+enum ResourceType {
+  PDF
+  VIDEO
+  GUIDE
+}
+
+enum AnnouncementType {
+  SIGNAL_UPDATE
+  TP_HIT
+  SL_HIT
+  BREAKEVEN
+  INFO
+  WARNING
+  NEW_RESOURCE
+}
+
+enum NotificationType {
+  NEW_SIGNAL
+  TP_HIT
+  SL_HIT
+  BREAKEVEN
+  NEW_RESOURCE
+  WEEKLY_RECAP
+  ANNOUNCEMENT
+  SYSTEM
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  email              String             @unique
+  name               String
+  password           String
+  role               Role               @default(MEMBER)
+  accountBalance     Float              @default(10000)
+  avatarUrl          String?
+  createdAt          DateTime           @default(now())
+  subscriptionStatus SubscriptionStatus @default(TRIAL)
+  subscriptionExpiry DateTime?
+  updatedAt          DateTime           @updatedAt
+  accounts           Account[]
+  sessions           Session[]
+  trades             Trade[]
+  postedSignals      Signal[]
+  postedOutlooks     DailyOutlook[]
+  uploadedResources  Resource[]
+  announcements      Announcement[]
+  memberWins         MemberWin[]
+  notifications      Notification[]
+}
+
+model Trade {
+  id          String       @id @default(cuid())
+  userId      String
+  coin        String
+  direction   Direction
+  entryPrice  Float
+  stopLoss    Float
+  takeProfit  Float
+  tp2         Float?
+  tp3         Float?
+  rrRatio     Float
+  riskPercent Float
+  pnlPercent  Float
+  outcome     TradeOutcome
+  setupType   String
+  notes       String?
+  tradeDate   DateTime
+  closedAt    DateTime?
+  month       String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, month])
+}
+
+model Signal {
+  id        String       @id @default(cuid())
+  coin      String
+  direction Direction
+  entryZone String
+  stopLoss  String
+  tp1       String
+  tp2       String
+  tp3       String
+  riskLevel RiskLevel
+  timeframe String
+  rrRatio   Float
+  reasoning String
+  status    SignalStatus @default(ACTIVE)
+  postedAt  DateTime     @default(now())
+  closedAt  DateTime?
+  isVipOnly Boolean      @default(true)
+  postedBy  String
+  author    User         @relation(fields: [postedBy], references: [id], onDelete: Cascade)
+}
+
+model DailyOutlook {
+  id              String     @id @default(cuid())
+  date            DateTime   @unique
+  marketBias      MarketBias
+  biasExplanation String
+  coinsToWatch    Json
+  levels          Json
+  avoidToday      Json
+  createdBy       String
+  createdAt       DateTime   @default(now())
+  author          User       @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+}
+
+model Resource {
+  id          String       @id @default(cuid())
+  title       String
+  description String
+  type        ResourceType
+  url         String
+  fileKey     String?
+  tag         String
+  isVipOnly   Boolean      @default(true)
+  meta        String
+  uploadedAt  DateTime     @default(now())
+  uploadedBy  String
+  author      User         @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+}
+
+model Announcement {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      AnnouncementType
+  isUrgent  Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  postedBy  String
+  author    User             @relation(fields: [postedBy], references: [id], onDelete: Cascade)
+}
+
+model WeeklyRecap {
+  id              String   @id @default(cuid())
+  weekStartDate   DateTime
+  weekEndDate     DateTime
+  totalTrades     Int
+  wins            Int
+  losses          Int
+  winRate         Float
+  bestTrade       String
+  worstTrade      String
+  totalPnlPercent Float
+  whatWeLearned   String
+  nextWeekFocus   String
+  createdAt       DateTime @default(now())
+}
+
+model MemberWin {
+  id         String   @id @default(cuid())
+  userId     String
+  coin       String
+  pnlPercent Float
+  message    String
+  likesCount Int      @default(0)
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}

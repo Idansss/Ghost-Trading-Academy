@@ -26,7 +26,9 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
+.pgpass-init.txt
 
 # vercel
 .vercel
@@ -34,3 +36,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local runtime artifacts
+.next-dev.log
+.next-dev.err.log
+.postgres-data/
+figma-bundle.md/

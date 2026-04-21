@@ -1,0 +1,65 @@
+/* Ghost Trading Academy — Design Token Overrides */
+
+:root {
+  --gold: #A67C00;
+  --gold-bright: #B8901A;
+  --gold-muted: rgba(166, 124, 0, 0.13);
+  --g-success: #16A34A;
+  --g-success-bright: #22C55E;
+  --g-success-muted: rgba(22, 163, 74, 0.13);
+  --g-danger: #DC2626;
+  --g-danger-bright: #EF4444;
+  --g-danger-muted: rgba(220, 38, 38, 0.13);
+  --g-info: #2563EB;
+  --g-info-bright: #3B82F6;
+  --g-info-muted: rgba(37, 99, 235, 0.13);
+  --bg-base: #F2F3F5;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F7F8FA;
+  --bg-border: rgba(0, 0, 0, 0.08);
+  --text-primary: #0C0C0E;
+  --text-secondary: rgba(12, 12, 14, 0.6);
+  --text-muted: rgba(12, 12, 14, 0.38);
+}
+
+.dark {
+  --background: #0C0C0E;
+  --card: #111114;
+  --foreground: rgba(255, 255, 255, 0.92);
+  --gold: #D4A520;
+  --gold-bright: #E8C040;
+  --gold-muted: rgba(212, 165, 32, 0.13);
+  --g-success: #4ADE80;
+  --g-success-bright: #86EFAC;
+  --g-success-muted: rgba(74, 222, 128, 0.13);
+  --g-danger: #F87171;
+  --g-danger-bright: #FCA5A5;
+  --g-danger-muted: rgba(248, 113, 113, 0.13);
+  --g-info: #93C5FD;
+  --g-info-bright: #BAD8FD;
+  --g-info-muted: rgba(147, 197, 253, 0.13);
+  --bg-base: #0C0C0E;
+  --bg-surface: #111114;
+  --bg-elevated: #18181C;
+  --bg-border: rgba(255, 255, 255, 0.08);
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-muted: rgba(255, 255, 255, 0.32);
+  --border: rgba(255, 255, 255, 0.08);
+  --muted: #18181C;
+  --muted-foreground: rgba(255, 255, 255, 0.5);
+  --input-background: #18181C;
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* JetBrains Mono for data/numbers */
+.font-mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+  font-variant-numeric: tabular-nums;
+}
