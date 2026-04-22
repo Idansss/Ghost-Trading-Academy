@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
 import { Plus, Pencil, Copy, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -19,11 +18,33 @@ const STATUS_COLORS: Record<string, [string, string]> = {
 };
 
 const card = { background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: '1rem' };
+type SignalForm = {
+  coin: string;
+  dir: 'LONG' | 'SHORT';
+  entry: string;
+  sl: string;
+  tp1: string;
+  tp2: string;
+  tp3: string;
+  risk: 'LOW' | 'MED' | 'HIGH';
+  tf: string;
+  reasoning: string;
+  vipOnly: boolean;
+  status: string;
+};
+type SignalNumericFieldKey = "entry" | "sl" | "tp1" | "tp2" | "tp3";
+const SIGNAL_PRICE_FIELDS: { key: SignalNumericFieldKey; label: string }[] = [
+  { key: "entry", label: "Entry Zone" },
+  { key: "sl", label: "Stop Loss" },
+  { key: "tp1", label: "TP 1" },
+  { key: "tp2", label: "TP 2" },
+  { key: "tp3", label: "TP 3" },
+];
 
 export function AdminSignals() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<SignalForm>({
     coin: 'BTC/USDT', dir: 'LONG' as 'LONG' | 'SHORT', entry: '', sl: '', tp1: '', tp2: '', tp3: '',
     risk: 'LOW' as 'LOW' | 'MED' | 'HIGH', tf: '4H', reasoning: '', vipOnly: true, status: 'ACTIVE',
   });
@@ -111,13 +132,10 @@ export function AdminSignals() {
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {[
-                  { key: 'entry', label: 'Entry Zone' }, { key: 'sl', label: 'Stop Loss' },
-                  { key: 'tp1', label: 'TP 1' }, { key: 'tp2', label: 'TP 2' }, { key: 'tp3', label: 'TP 3' },
-                ].map(f => (
+                {SIGNAL_PRICE_FIELDS.map((f) => (
                   <div key={f.key}>
                     <label className="text-[11px] font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>{f.label}</label>
-                    <input value={(form as any)[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })} placeholder="0.00" className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--bg-border)', color: 'var(--text-primary)' }} />
+                    <input value={form[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })} placeholder="0.00" className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--bg-border)', color: 'var(--text-primary)' }} />
                   </div>
                 ))}
               </div>

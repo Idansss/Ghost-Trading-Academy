@@ -104,7 +104,7 @@ export function RichNotesEditor({
     const nextValue = value ?? "";
 
     if (nextValue !== editor.getHTML() && nextValue === lastSavedContentRef.current) {
-      editor.commands.setContent(nextValue, { emitUpdate: false });
+      editor.commands.setContent(nextValue, false);
       setContent(nextValue);
       setCharacterCount(editor.getText().length);
       setIsDirty(false);

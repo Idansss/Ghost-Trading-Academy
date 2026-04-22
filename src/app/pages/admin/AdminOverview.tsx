@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Users, Crown, Zap, BookOpen } from 'lucide-react';
 
 const STATS = [

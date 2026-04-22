@@ -48,12 +48,12 @@ export function Calendar({
         ...classNames,
       }}
       components={{
-        Chevron: ({ orientation, className: iconClassName, ...iconProps }) =>
-          orientation === "left" ? (
-            <ChevronLeft className={cn("h-4 w-4", iconClassName)} {...iconProps} />
-          ) : (
-            <ChevronRight className={cn("h-4 w-4", iconClassName)} {...iconProps} />
-          ),
+        IconLeft: ({ className: iconClassName, ...iconProps }) => (
+          <ChevronLeft className={cn("h-4 w-4", iconClassName)} {...iconProps} />
+        ),
+        IconRight: ({ className: iconClassName, ...iconProps }) => (
+          <ChevronRight className={cn("h-4 w-4", iconClassName)} {...iconProps} />
+        ),
       }}
       {...props}
     />

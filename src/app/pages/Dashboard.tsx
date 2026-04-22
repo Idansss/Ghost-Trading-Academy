@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell
@@ -40,12 +40,25 @@ const kpis = [
 
 const card = { background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: '1rem' };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+type TooltipPayloadItem = {
+  value?: number;
+  name?: string;
+};
+
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+};
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
+  const value = payload[0]?.value ?? 0;
+  const name = payload[0]?.name;
   return (
     <div className="px-3 py-2 rounded-lg text-xs" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--bg-border)', color: 'var(--text-primary)' }}>
       <p style={{ color: 'var(--text-muted)' }}>{label}</p>
-      <p className="font-mono font-semibold">{payload[0]?.name === 'pnl' ? `${payload[0].value > 0 ? '+' : ''}${payload[0].value}%` : `$${payload[0]?.value?.toLocaleString()}`}</p>
+      <p className="font-mono font-semibold">{name === 'pnl' ? `${value > 0 ? '+' : ''}${value}%` : `$${value.toLocaleString()}`}</p>
     </div>
   );
 };
@@ -174,7 +187,7 @@ export function Dashboard() {
           {/* Today's Bias */}
           <div className="p-4 rounded-2xl" style={card}>
             <div className="flex items-center justify-between mb-3">
-              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Today's Bias</p>
+              <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Today&apos;s Bias</p>
               <span className="px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ background: 'var(--g-success-muted)', color: 'var(--g-success)' }}>BULLISH</span>
             </div>
             <p className="text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Download, Plus, Search, ChevronUp, ChevronDown, ChevronsUpDown, MoreHorizontal, X } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -20,19 +20,48 @@ const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', '
 const MONTHLY_SNAPSHOT = [12.4, -3.2, 18.6, 8.9, 11.8, null, null, null, null, null, null, null];
 
 const card = { background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: '1rem' };
+type Trade = (typeof ALL_TRADES)[number];
+type SortableTradeKey = keyof Trade;
+type TradeForm = {
+  pair: string;
+  dir: 'LONG' | 'SHORT';
+  entry: string;
+  sl: string;
+  tp: string;
+  tp2: string;
+  tp3: string;
+  pnl: string;
+  outcome: string;
+  setup: string;
+  date: string;
+  notes: string;
+};
+type TradeFormFieldKey = keyof TradeForm;
+const JOURNAL_TABLE_HEADERS: { label: string; key: SortableTradeKey }[] = [
+  { label: "Date", key: "date" },
+  { label: "Pair", key: "pair" },
+  { label: "Dir", key: "dir" },
+  { label: "Entry", key: "entry" },
+  { label: "SL", key: "sl" },
+  { label: "TP", key: "tp" },
+  { label: "R:R", key: "rr" },
+  { label: "Setup", key: "setup" },
+  { label: "Outcome", key: "outcome" },
+  { label: "P&L%", key: "pnl" },
+];
 
 export function Journal() {
   const [activeMonth, setActiveMonth] = useState('May');
   const [search, setSearch] = useState('');
   const [outcomeFilter, setOutcomeFilter] = useState('All');
   const [dirFilter, setDirFilter] = useState('All');
-  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortableTradeKey | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
   const [openRow, setOpenRow] = useState<number | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Form state
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<TradeForm>({
     pair: '', dir: 'LONG' as 'LONG' | 'SHORT', entry: '', sl: '', tp: '',
     tp2: '', tp3: '', pnl: '', outcome: 'WIN', setup: '', date: '', notes: '',
   });
@@ -44,8 +73,8 @@ export function Journal() {
     if (dirFilter !== 'All') t = t.filter(tr => tr.dir === dirFilter);
     if (sortKey) {
       t.sort((a, b) => {
-        const av = (a as any)[sortKey];
-        const bv = (b as any)[sortKey];
+        const av = a[sortKey];
+        const bv = b[sortKey];
         return sortDir === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
       });
     }
@@ -53,12 +82,11 @@ export function Journal() {
   }, [search, outcomeFilter, dirFilter, sortKey, sortDir]);
 
   const wins = filteredTrades.filter(t => t.outcome === 'WIN').length;
-  const losses = filteredTrades.filter(t => t.outcome === 'LOSS').length;
   const totalPnl = filteredTrades.reduce((s, t) => s + t.pnl, 0);
   const bestTrade = Math.max(...filteredTrades.map(t => t.pnl));
   const worstTrade = Math.min(...filteredTrades.filter(t => t.pnl < 0).map(t => t.pnl), 0);
 
-  function handleSort(key: string) {
+  function handleSort(key: SortableTradeKey) {
     if (sortKey === key) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
     else { setSortKey(key); setSortDir('asc'); }
   }
@@ -141,11 +169,7 @@ export function Journal() {
           <table className="w-full min-w-[800px]">
             <thead>
               <tr style={{ borderBottom: '1px solid var(--bg-border)' }}>
-                {[
-                  { label: 'Date', key: 'date' }, { label: 'Pair', key: 'pair' }, { label: 'Dir', key: 'dir' },
-                  { label: 'Entry', key: 'entry' }, { label: 'SL', key: 'sl' }, { label: 'TP', key: 'tp' },
-                  { label: 'R:R', key: 'rr' }, { label: 'Setup', key: 'setup' }, { label: 'Outcome', key: 'outcome' }, { label: 'P&L%', key: 'pnl' },
-                ].map(h => (
+                {JOURNAL_TABLE_HEADERS.map(h => (
                   <th key={h.key} className="px-4 py-2.5 text-left cursor-pointer" onClick={() => handleSort(h.key)}>
                     <div className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>
                       {h.label} <SortIcon k={h.key} />
@@ -264,7 +288,7 @@ export function Journal() {
                 ].map(f => (
                   <div key={f.key}>
                     <label className="text-[11px] font-semibold mb-1 block" style={{ color: 'var(--text-muted)' }}>{f.label}</label>
-                    <input type="number" value={(form as any)[f.key]} onChange={e => setForm({ ...form, [f.key]: e.target.value })} placeholder="0.00" className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--bg-border)', color: 'var(--text-primary)' }} />
+                    <input type="number" value={form[f.key as TradeFormFieldKey]} onChange={e => setForm({ ...form, [f.key]: e.target.value })} placeholder="0.00" className="w-full px-3 py-2 rounded-lg text-sm font-mono outline-none" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--bg-border)', color: 'var(--text-primary)' }} />
                   </div>
                 ))}
               </div>

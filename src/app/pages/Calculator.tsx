@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { CheckCircle, AlertTriangle } from 'lucide-react';
 
 const card = { background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: '1rem' };

@@ -4,7 +4,6 @@ import {
   LayoutDashboard, BookOpen, Zap, Sun, Moon, BarChart2,
   GraduationCap, Calculator, Users, Bell, Ghost, Settings,
   ChevronLeft, ChevronRight, Search, LogOut, User, Menu, X,
-  TrendingUp, Shield, ChevronDown
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { toast } from 'sonner';

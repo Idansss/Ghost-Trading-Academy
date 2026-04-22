@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Ghost, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -77,7 +77,7 @@ export function Login() {
           </div>
 
           <p className="text-center text-xs" style={{ color: 'var(--text-muted)' }}>
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <button onClick={() => navigate('/auth/register')} className="font-semibold" style={{ color: 'var(--gold)' }}>Register</button>
           </p>
         </div>

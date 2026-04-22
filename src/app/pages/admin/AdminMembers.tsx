@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Plus, Pause, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -108,7 +108,7 @@ export function AdminMembers() {
           <div className="relative p-6 rounded-2xl w-full max-w-sm" style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-border)' }}>
             <p className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>Change role?</p>
             <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>
-              Are you sure you want to change this member's role to <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{confirmRoleChange.role}</span>?
+              Are you sure you want to change this member&apos;s role to <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{confirmRoleChange.role}</span>?
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmRoleChange(null)} className="flex-1 py-2 rounded-xl text-sm" style={{ border: '1px solid var(--bg-border)', color: 'var(--text-secondary)' }}>Cancel</button>

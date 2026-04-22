@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { XCircle } from 'lucide-react';
 
 const COINS_TO_WATCH = [

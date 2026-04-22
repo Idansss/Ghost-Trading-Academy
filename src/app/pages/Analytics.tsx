@@ -1,7 +1,7 @@
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell,
-  LineChart, Line, PieChart, Pie, Legend
+  LineChart, Line, PieChart, Pie
 } from 'recharts';
 import { Star, TrendingDown, Target, Calendar, AlertTriangle, Flame } from 'lucide-react';
 
@@ -46,7 +46,18 @@ const INSIGHTS = [
 
 const card = { background: 'var(--bg-surface)', border: '1px solid var(--bg-border)', borderRadius: '1rem' };
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+type TooltipPayloadItem = {
+  value?: number;
+  name?: string;
+};
+
+type CustomTooltipProps = {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+};
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="px-3 py-2 rounded-lg text-xs" style={{ background: 'var(--bg-elevated)', border: '1px solid var(--bg-border)', color: 'var(--text-primary)' }}>

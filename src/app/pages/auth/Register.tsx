@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Ghost, Eye, EyeOff } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';

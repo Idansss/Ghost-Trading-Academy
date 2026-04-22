@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion } from 'framer-motion';
 import { Zap, CheckCircle, XCircle, FileText, BarChart2, Bell } from 'lucide-react';
 import { toast } from 'sonner';
 
