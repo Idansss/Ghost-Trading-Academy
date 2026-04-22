@@ -18,7 +18,6 @@ type Win = {
 
 export function WinsFeedClient({
   initialWins,
-  userId: _userId,
   userName,
   userAvatarUrl,
 }: {
