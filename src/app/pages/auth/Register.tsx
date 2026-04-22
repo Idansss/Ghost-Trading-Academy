@@ -55,7 +55,7 @@ export function Register() {
             <Ghost size={28} style={{ color: 'var(--gold)' }} />
           </div>
           <h1 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 20 }}>Create your account</h1>
-          <span className="inline-block mt-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-widest" style={{ background: 'var(--gold-muted)', color: 'var(--gold)', border: '1px solid rgba(212,165,32,0.25)' }}>APEX VIP</span>
+          <span className="inline-block mt-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-widest" style={{ background: 'var(--gold-muted)', color: 'var(--gold)', border: '1px solid rgba(212,165,32,0.25)' }}>GHOST VIP</span>
         </div>
 
         <div className="p-6 rounded-2xl" style={{ background: 'var(--bg-surface)', border: '1px solid var(--bg-border)' }}>

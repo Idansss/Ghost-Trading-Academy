@@ -83,7 +83,7 @@ export default function RegisterPage() {
         </div>
         <Card>
           <CardHeader className="space-y-2 text-center">
-            <CardTitle className="text-2xl">Join Apex VIP</CardTitle>
+            <CardTitle className="text-2xl">Join Ghost VIP</CardTitle>
             <p className="text-sm text-muted-foreground">
               Create your member account. VIP upgrades are managed by admins.
             </p>
@@ -92,7 +92,7 @@ export default function RegisterPage() {
             <form className="space-y-5" onSubmit={onSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" placeholder="Apex Trader" {...register("name")} />
+                <Input id="name" placeholder="Ghost Trader" {...register("name")} />
                 {errors.name ? (
                   <p className="text-xs text-[color:var(--color-red)]">{errors.name.message}</p>
                 ) : null}

@@ -16,10 +16,10 @@ export async function sendWelcomeEmail(to: string, name: string) {
   await resend.emails.send({
     from: env.resendFromEmail,
     to,
-    subject: "Welcome to Apex VIP",
+    subject: "Welcome to Ghost VIP",
     html: `
       <div style="font-family: Inter, Arial, sans-serif; color: #111114; padding: 24px;">
-        <h1 style="font-weight: 600; margin-bottom: 16px;">Welcome to Apex VIP</h1>
+        <h1 style="font-weight: 600; margin-bottom: 16px;">Welcome to Ghost VIP</h1>
         <p style="margin: 0 0 12px;">Hi ${name},</p>
         <p style="margin: 0 0 12px;">
           Your member account is now live. You can sign in, start logging trades, and explore the platform immediately.

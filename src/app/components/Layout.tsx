@@ -107,7 +107,7 @@ export function Layout() {
           {!collapsed && (
             <div className="overflow-hidden">
               <p className="text-xs leading-tight whitespace-nowrap" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Ghost Trading</p>
-              <p className="text-[10px] leading-tight whitespace-nowrap" style={{ color: 'var(--gold)', fontWeight: 500 }}>APEX VIP</p>
+              <p className="text-[10px] leading-tight whitespace-nowrap" style={{ color: 'var(--gold)', fontWeight: 500 }}>GHOST VIP</p>
             </div>
           )}
         </div>
@@ -191,7 +191,7 @@ export function Layout() {
         {/* Mobile header */}
         <header className="flex md:hidden items-center justify-between px-4 h-14 flex-shrink-0" style={s.topbar}>
           <button onClick={() => setMobileOpen(true)} style={{ color: 'var(--text-primary)' }}><Menu size={22} /></button>
-          <span className="text-sm font-bold tracking-widest" style={{ color: 'var(--gold)' }}>APEX VIP</span>
+          <span className="text-sm font-bold tracking-widest" style={{ color: 'var(--gold)' }}>GHOST VIP</span>
           <div className="flex items-center gap-2">
             <button className="relative" onClick={() => setNotifOpen(v => !v)} style={{ color: 'var(--text-primary)' }}>
               <Bell size={20} />

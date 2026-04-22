@@ -104,7 +104,7 @@ export function MobileHeader({
       </Sheet>
 
       <p className="text-sm font-semibold tracking-[0.22em] text-[color:var(--color-gold)]">
-        APEX VIP
+        GHOST VIP
       </p>
 
       <div className="flex items-center gap-1">

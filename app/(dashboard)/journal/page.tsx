@@ -84,7 +84,7 @@ export default function JournalPage() {
     }
     const monthLabel = selectedMonth.toLowerCase();
     const year = new Date().getFullYear();
-    exportTradesToCSV(filteredTrades, `apex-journal-${monthLabel}-${year}.csv`);
+    exportTradesToCSV(filteredTrades, `ghost-journal-${monthLabel}-${year}.csv`);
     toast.success(`Exported ${filteredTrades.length} trades to CSV`);
   };
 

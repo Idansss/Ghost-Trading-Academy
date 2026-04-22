@@ -67,7 +67,7 @@ export default function LoginPage() {
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl">Access The Desk</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Sign in to your Apex VIP account.
+              Sign in to your Ghost VIP account.
             </p>
           </CardHeader>
           <CardContent>

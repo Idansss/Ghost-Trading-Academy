@@ -15,9 +15,9 @@ export function Logo({ compact = false }: { compact?: boolean }) {
       </span>
       {!compact ? (
         <span className="flex flex-col">
-          <span className="text-sm font-semibold">Apex VIP</span>
+          <span className="text-sm font-semibold">Ghost VIP</span>
           <span className="text-xs text-muted-foreground">
-            Crypto Trading Desk
+            Ghost Trading Desk
           </span>
         </span>
       ) : null}

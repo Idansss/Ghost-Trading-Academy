@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: { default: "Apex VIP", template: "%s | Apex VIP" },
+  title: { default: "Ghost VIP", template: "%s | Ghost VIP" },
   description:
     "Professional trading signals, journal, education, and analytics for serious crypto traders.",
   icons: { icon: "/favicon.ico" },

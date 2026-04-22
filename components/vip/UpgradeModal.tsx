@@ -59,7 +59,7 @@ export function UpgradeModal({
             <div className="grid h-16 w-16 place-items-center rounded-full bg-[color:var(--color-gold-light)] text-[color:var(--color-gold)]">
               <Crown className="h-12 w-12" />
             </div>
-            <DialogTitle className="mt-4 text-3xl">Unlock Apex VIP</DialogTitle>
+            <DialogTitle className="mt-4 text-3xl">Unlock Ghost VIP</DialogTitle>
             <DialogDescription className="max-w-sm text-center">
               Get access to every signal, resource, and premium feature
             </DialogDescription>

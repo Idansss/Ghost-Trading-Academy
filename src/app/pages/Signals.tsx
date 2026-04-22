@@ -187,7 +187,7 @@ function UpgradeModal({ onClose }: { onClose: () => void }) {
           <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: 'var(--gold-muted)', border: '1px solid var(--gold)' }}>
             <Crown size={28} style={{ color: 'var(--gold)' }} />
           </div>
-          <h2 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 22 }}>Unlock Apex VIP</h2>
+          <h2 style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 22 }}>Unlock Ghost VIP</h2>
           <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Get access to every signal, resource, and premium feature</p>
         </div>
         <ul className="space-y-2.5 mb-6">
