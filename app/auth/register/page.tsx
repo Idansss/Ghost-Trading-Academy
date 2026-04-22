@@ -161,7 +161,7 @@ export default function RegisterPage() {
                   checked={Boolean(watch("terms"))}
                   onCheckedChange={(checked) => setValue("terms", checked === true)}
                 />
-                I agree to the terms and community rules.
+                I confirm the information above is accurate.
               </label>
               {errors.terms ? (
                 <p className="text-xs text-[color:var(--color-red)]">{errors.terms.message}</p>

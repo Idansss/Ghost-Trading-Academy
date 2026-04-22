@@ -14,7 +14,7 @@ export const registerSchema = z
     password: z.string().min(8, "Password must be at least 8 characters."),
     confirmPassword: z.string().min(8, "Confirm your password."),
     terms: z.boolean().refine((value) => value, {
-      message: "You must accept the terms.",
+      message: "Please confirm your registration details.",
     }),
   })
   .refine((value) => value.password === value.confirmPassword, {

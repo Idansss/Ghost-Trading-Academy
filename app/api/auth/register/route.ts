@@ -57,7 +57,18 @@ export async function POST(request: Request) {
         email: user.email,
       },
     });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "";
+    if (
+      message.includes("Can't reach database server") ||
+      message.includes("ECONNREFUSED") ||
+      message.includes("P1001")
+    ) {
+      return apiError(
+        "Database connection failed. Check DATABASE_URL and try again.",
+        500,
+      );
+    }
     return apiError("Registration failed. Please try again later.", 500);
   }
 }
