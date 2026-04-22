@@ -1,4 +1,3 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { Role, SubscriptionStatus } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
@@ -18,7 +17,6 @@ const credentialsSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
   },

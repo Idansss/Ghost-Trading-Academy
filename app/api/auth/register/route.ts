@@ -38,7 +38,7 @@ export async function POST(request: Request) {
       return apiError("An account with this email already exists.", 409);
     }
 
-    const password = await bcrypt.hash(parsed.data.password, 12);
+    const password = await bcrypt.hash(parsed.data.password, 10);
     const user = await prisma.user.create({
       data: {
         name: parsed.data.name,

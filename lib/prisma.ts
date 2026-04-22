@@ -5,11 +5,18 @@ declare global {
   var prisma: PrismaClient | undefined;
 }
 
-export const prisma =
-  global.prisma ??
-  new PrismaClient({
+function createPrismaClient() {
+  const client = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
+  // Pre-warm the connection so the first request isn't blocked by Neon cold-start
+  void client.$connect().catch(() => {
+    // Connection will be retried automatically on first query
+  });
+  return client;
+}
+
+export const prisma = global.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   global.prisma = prisma;
