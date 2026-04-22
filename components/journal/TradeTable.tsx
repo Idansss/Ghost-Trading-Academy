@@ -35,7 +35,7 @@ const sortableColumns: Array<{ key: SortKey; label: string }> = [
   { key: "entryPrice", label: "Entry" },
   { key: "rrRatio", label: "R:R" },
   { key: "outcome", label: "Outcome" },
-  { key: "pnlPercent", label: "P&L%" },
+  { key: "pnlPercent", label: "P&L %" },
 ];
 
 export function TradeTable({
@@ -143,12 +143,9 @@ export function TradeTable({
                 </button>
               </TableHead>
             ))}
-            <TableHead>SL</TableHead>
-            <TableHead>TP</TableHead>
-            <TableHead>Setup</TableHead>
           </TableRow>
-        </TableHeader>
-        <TableBody>
+          </TableHeader>
+          <TableBody>
           {sortedTrades.map((trade) => (
             <TableRow
               key={trade.id}
@@ -156,7 +153,7 @@ export function TradeTable({
               className="cursor-pointer transition-colors hover:bg-accent/40"
             >
               <TableCell>{format(new Date(trade.tradeDate), "MMM d, yyyy")}</TableCell>
-              <TableCell>{trade.coin}</TableCell>
+              <TableCell className="font-medium">{trade.coin}</TableCell>
               <TableCell>
                 <Badge variant={trade.direction === "LONG" ? "success" : "danger"}>
                   <span className="status-dot bg-current" />
@@ -190,9 +187,6 @@ export function TradeTable({
               >
                 {formatPercent(trade.pnlPercent)}
               </TableCell>
-              <TableCell>{trade.stopLoss}</TableCell>
-              <TableCell>{trade.takeProfit}</TableCell>
-              <TableCell>{trade.setupType}</TableCell>
             </TableRow>
           ))}
         </TableBody>

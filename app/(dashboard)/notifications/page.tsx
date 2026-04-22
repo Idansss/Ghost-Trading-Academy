@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { PageTransition } from "@/components/layout/PageTransition";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { NotificationItem } from "@/components/notifications/NotificationItem";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -109,6 +110,7 @@ export default function NotificationsPage() {
   return (
     <PageTransition>
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Dashboard", href: "/dashboard" }, { label: "Notifications" }]} />
       <PageHeader
         eyebrow="Notifications"
         title="Notification Center"

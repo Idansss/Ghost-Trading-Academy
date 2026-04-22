@@ -3,6 +3,8 @@ import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { SubscriptionBanner } from "@/components/layout/SubscriptionBanner";
 import { Topbar } from "@/components/layout/Topbar";
+import type { GlobalSearchItem } from "@/components/layout/GlobalSearch";
+import { adminNav, primaryNav } from "@/components/layout/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -23,14 +25,75 @@ export default async function DashboardLayout({
       isRead: false,
     },
   });
+  const [recentSignals, recentResources, recentTrades, recentAnnouncements] =
+    await Promise.all([
+      prisma.signal.findMany({
+        orderBy: { postedAt: "desc" },
+        take: 6,
+      }),
+      prisma.resource.findMany({
+        orderBy: { uploadedAt: "desc" },
+        take: 6,
+      }),
+      prisma.trade.findMany({
+        where: { userId: session.user.id },
+        orderBy: { tradeDate: "desc" },
+        take: 5,
+      }),
+      prisma.announcement.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+    ]);
+
+  const navItems = session.user.role === "ADMIN" ? [...primaryNav, adminNav] : primaryNav;
+  const searchItems: GlobalSearchItem[] = [
+    ...navItems.map((item) => ({
+      id: `nav-${item.href}`,
+      title: item.label,
+      subtitle: `Open ${item.label.toLowerCase()}.`,
+      href: item.href,
+      section: "Page",
+    })),
+    ...recentSignals.map((signal) => ({
+      id: `signal-${signal.id}`,
+      title: `${signal.coin} ${signal.direction}`,
+      subtitle: `${signal.status} setup on ${signal.timeframe} | Entry ${signal.entryZone}`,
+      href: "/signals",
+      section: "Signal",
+    })),
+    ...recentResources.map((resource) => ({
+      id: `resource-${resource.id}`,
+      title: resource.title,
+      subtitle: `${resource.type} resource | ${resource.tag}`,
+      href: "/education",
+      section: "Resource",
+    })),
+    ...recentTrades.map((trade) => ({
+      id: `trade-${trade.id}`,
+      title: `${trade.coin} ${trade.direction}`,
+      subtitle: `${trade.outcome} trade | ${trade.setupType}`,
+      href: "/journal",
+      section: "Trade",
+    })),
+    ...recentAnnouncements.map((announcement) => ({
+      id: `announcement-${announcement.id}`,
+      title: announcement.title,
+      subtitle: announcement.message,
+      href: "/community",
+      section: "Update",
+    })),
+  ];
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar user={session.user} />
-      <div className="flex min-h-screen flex-1 flex-col">
-        <Topbar user={session.user} unreadCount={unreadCount} />
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+        <Topbar user={session.user} unreadCount={unreadCount} searchItems={searchItems} />
         <SubscriptionBanner user={session.user} />
-        <main className="flex-1 px-4 pb-16 pt-6 md:pb-0 sm:px-6 lg:px-8">{children}</main>
+        <main className="flex-1 overflow-y-auto px-4 pt-6 pb-20 sm:px-6 md:pb-6 lg:px-8">
+          {children}
+        </main>
         <MobileBottomNav />
       </div>
     </div>

@@ -8,19 +8,27 @@ export async function GET(request: Request) {
   try {
     const user = await requireUser();
 
-    if (user.role === "MEMBER") {
-      return apiError("Forbidden", 403);
-    }
-
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
 
-    const signals = await prisma.signal.findMany({
-      where: status && status !== "ALL" ? { status: status as never } : undefined,
-      orderBy: { postedAt: "desc" },
-    });
+    const [signals, takenRecords] = await Promise.all([
+      prisma.signal.findMany({
+        where: status && status !== "ALL" ? { status: status as never } : undefined,
+        orderBy: { postedAt: "desc" },
+      }),
+      prisma.signalTaken.findMany({
+        where: { userId: user.id },
+        select: { signalId: true },
+      }),
+    ]);
 
-    return Response.json({ signals });
+    const takenSet = new Set(takenRecords.map((r) => r.signalId));
+    const signalsWithTaken = signals.map((signal) => ({
+      ...signal,
+      takenByMe: takenSet.has(signal.id),
+    }));
+
+    return Response.json({ signals: signalsWithTaken });
   } catch {
     return apiError("Unable to load signals.", 500);
   }

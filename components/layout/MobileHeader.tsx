@@ -4,6 +4,8 @@ import type { Session } from "next-auth";
 import Link from "next/link";
 import { Menu } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { MobileSearch } from "@/components/layout/MobileSearch";
+import type { GlobalSearchItem } from "@/components/layout/GlobalSearch";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { adminNav, isPathActive, primaryNav } from "@/components/layout/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -23,9 +25,11 @@ import { cn } from "@/lib/utils";
 export function MobileHeader({
   user,
   unreadCount,
+  searchItems = [],
 }: {
   user: Session["user"];
   unreadCount: number;
+  searchItems?: GlobalSearchItem[];
 }) {
   const pathname = usePathname();
   const displayName = user.name ?? "Member";
@@ -41,7 +45,13 @@ export function MobileHeader({
     <header className="flex h-16 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">
       <Sheet>
         <SheetTrigger asChild>
-          <Button type="button" variant="ghost" size="icon" className="h-10 w-10">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-10 w-10"
+            aria-label="Open navigation menu"
+          >
             <Menu className="h-5 w-5" />
           </Button>
         </SheetTrigger>
@@ -108,6 +118,7 @@ export function MobileHeader({
       </p>
 
       <div className="flex items-center gap-1">
+        <MobileSearch items={searchItems} />
         <NotificationBell initialUnreadCount={unreadCount} />
         <Button asChild variant="ghost" size="icon" className="h-10 w-10 rounded-full">
           <Link href="/profile">

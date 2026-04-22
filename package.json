@@ -1,9 +1,11 @@
 {
-  "name": "apex-vip",
+  "name": "ghost-vip",
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
     "dev": "next dev",
+    "dev:clean": "npm run clean && next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -51,7 +53,6 @@
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
-    "react-router-dom": "^7.14.2",
     "recharts": "^2.15.0",
     "resend": "^4.0.1",
     "sonner": "^1.7.2",

@@ -1,4 +1,4 @@
-# Apex VIP — Premium Trading Platform
+# Ghost VIP - Premium Trading Platform
 
 A full-stack trading community platform for crypto traders. VIP signals,
 trade journal, daily outlook, education hub, analytics, and community.
@@ -16,8 +16,8 @@ trade journal, daily outlook, education hub, analytics, and community.
 
 ## Default Login Credentials (after seed)
 
-Admin: `admin@apexvip.com / admin123`
-VIP member: `vip@apexvip.com / vip123`
+Admin: `admin@ghostvip.com / admin123`
+VIP member: `vip@ghostvip.com / vip123`
 
 Change these passwords immediately after first login.
 

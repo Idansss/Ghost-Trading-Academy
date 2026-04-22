@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ResourceForm } from "@/components/admin/ResourceForm";
 import { PageTransition } from "@/components/layout/PageTransition";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -105,6 +106,7 @@ export default function AdminResourcesPage() {
   return (
     <PageTransition>
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Resources" }]} />
       <PageHeader
         eyebrow="Admin Resources"
         title="Manage Education Resources"
@@ -130,14 +132,15 @@ export default function AdminResourcesPage() {
         <CardHeader>
           <CardTitle>Resource Library</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 p-6">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="h-14 rounded-2xl bg-muted/50" />
               ))}
             </div>
           ) : isError ? (
+            <div className="p-6">
             <ErrorState
               title="Resources unavailable"
               description="There was a problem loading the resource table."
@@ -145,7 +148,10 @@ export default function AdminResourcesPage() {
                 void refetch();
               }}
             />
+            </div>
           ) : data?.resources.length ? (
+            <div className="overflow-x-auto">
+            <div className="min-w-max px-6 pb-6">
             <Table className="min-w-[640px] w-full">
               <TableHeader>
                 <TableRow>
@@ -226,12 +232,16 @@ export default function AdminResourcesPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
+            </div>
           ) : (
+            <div className="p-6">
             <EmptyState
               icon={<Pencil className="h-12 w-12" />}
               title="No resources yet"
               description="Upload your first education resource to populate the library."
             />
+            </div>
           )}
         </CardContent>
       </Card>

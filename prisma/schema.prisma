@@ -82,26 +82,28 @@ enum NotificationType {
 }
 
 model User {
-  id                 String             @id @default(cuid())
-  email              String             @unique
-  name               String
-  password           String
-  role               Role               @default(MEMBER)
-  accountBalance     Float              @default(10000)
-  avatarUrl          String?
-  createdAt          DateTime           @default(now())
-  subscriptionStatus SubscriptionStatus @default(TRIAL)
-  subscriptionExpiry DateTime?
-  updatedAt          DateTime           @updatedAt
-  accounts           Account[]
-  sessions           Session[]
-  trades             Trade[]
-  postedSignals      Signal[]
-  postedOutlooks     DailyOutlook[]
-  uploadedResources  Resource[]
-  announcements      Announcement[]
-  memberWins         MemberWin[]
-  notifications      Notification[]
+  id                  String               @id @default(cuid())
+  email               String               @unique
+  name                String
+  password            String
+  role                Role                 @default(MEMBER)
+  accountBalance      Float                @default(10000)
+  avatarUrl           String?
+  createdAt           DateTime             @default(now())
+  subscriptionStatus  SubscriptionStatus   @default(TRIAL)
+  subscriptionExpiry  DateTime?
+  updatedAt           DateTime             @updatedAt
+  accounts            Account[]
+  sessions            Session[]
+  trades              Trade[]
+  postedSignals       Signal[]
+  postedOutlooks      DailyOutlook[]
+  uploadedResources   Resource[]
+  announcements       Announcement[]
+  memberWins          MemberWin[]
+  notifications       Notification[]
+  signalsTaken        SignalTaken[]
+  resourceCompletions ResourceCompletion[]
 }
 
 model Trade {
@@ -131,7 +133,7 @@ model Trade {
 }
 
 model Signal {
-  id        String       @id @default(cuid())
+  id        String        @id @default(cuid())
   coin      String
   direction Direction
   entryZone String
@@ -143,12 +145,25 @@ model Signal {
   timeframe String
   rrRatio   Float
   reasoning String
-  status    SignalStatus @default(ACTIVE)
-  postedAt  DateTime     @default(now())
+  status    SignalStatus  @default(ACTIVE)
+  postedAt  DateTime      @default(now())
   closedAt  DateTime?
-  isVipOnly Boolean      @default(true)
+  isVipOnly Boolean       @default(true)
   postedBy  String
-  author    User         @relation(fields: [postedBy], references: [id], onDelete: Cascade)
+  author    User          @relation(fields: [postedBy], references: [id], onDelete: Cascade)
+  takenBy   SignalTaken[]
+}
+
+model SignalTaken {
+  id       String   @id @default(cuid())
+  userId   String
+  signalId String
+  takenAt  DateTime @default(now())
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  signal   Signal   @relation(fields: [signalId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, signalId])
+  @@index([userId])
 }
 
 model DailyOutlook {
@@ -165,18 +180,31 @@ model DailyOutlook {
 }
 
 model Resource {
-  id          String       @id @default(cuid())
+  id          String               @id @default(cuid())
   title       String
   description String
   type        ResourceType
   url         String
   fileKey     String?
   tag         String
-  isVipOnly   Boolean      @default(true)
+  isVipOnly   Boolean              @default(true)
   meta        String
-  uploadedAt  DateTime     @default(now())
+  uploadedAt  DateTime             @default(now())
   uploadedBy  String
-  author      User         @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  author      User                 @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
+  completions ResourceCompletion[]
+}
+
+model ResourceCompletion {
+  id          String   @id @default(cuid())
+  userId      String
+  resourceId  String
+  completedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource    Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceId])
+  @@index([userId])
 }
 
 model Announcement {
@@ -213,6 +241,7 @@ model MemberWin {
   pnlPercent Float
   message    String
   likesCount Int      @default(0)
+  isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -15,6 +15,6 @@ export const env = {
   uploadthingSecret: process.env.UPLOADTHING_SECRET,
   uploadthingAppId: process.env.UPLOADTHING_APP_ID,
   resendApiKey: process.env.RESEND_API_KEY,
-  resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "noreply@apexvip.com",
+  resendFromEmail: process.env.RESEND_FROM_EMAIL ?? "noreply@ghostvip.com",
   contactLink: process.env.NEXT_PUBLIC_CONTACT_LINK ?? "#",
 } as const;

@@ -21,12 +21,14 @@ export function AddTradeModal({
   open,
   onOpenChange,
   initialTrade,
+  prefill,
   onSubmit,
   isSubmitting,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   initialTrade?: Trade | null;
+  prefill?: { entryPrice?: number; stopLoss?: number; takeProfit?: number; rrRatio?: number };
   onSubmit: (values: TradeValues) => Promise<void> | void;
   isSubmitting?: boolean;
 }) {
@@ -35,9 +37,9 @@ export function AddTradeModal({
     defaultValues: {
       coin: "BTC/USDT",
       direction: "LONG",
-      entryPrice: 0,
-      stopLoss: 0,
-      takeProfit: 0,
+      entryPrice: prefill?.entryPrice ?? 0,
+      stopLoss: prefill?.stopLoss ?? 0,
+      takeProfit: prefill?.takeProfit ?? 0,
       tp2: undefined,
       tp3: undefined,
       pnlPercent: 0,
@@ -49,22 +51,38 @@ export function AddTradeModal({
   });
 
   useEffect(() => {
-    if (!initialTrade) return;
-    form.reset({
-      coin: initialTrade.coin,
-      direction: initialTrade.direction,
-      entryPrice: initialTrade.entryPrice,
-      stopLoss: initialTrade.stopLoss,
-      takeProfit: initialTrade.takeProfit,
-      tp2: initialTrade.tp2 ?? undefined,
-      tp3: initialTrade.tp3 ?? undefined,
-      pnlPercent: initialTrade.pnlPercent,
-      outcome: initialTrade.outcome,
-      setupType: initialTrade.setupType,
-      tradeDate: new Date(initialTrade.tradeDate).toISOString().slice(0, 10),
-      notes: initialTrade.notes ?? "",
-    });
-  }, [form, initialTrade]);
+    if (initialTrade) {
+      form.reset({
+        coin: initialTrade.coin,
+        direction: initialTrade.direction,
+        entryPrice: initialTrade.entryPrice,
+        stopLoss: initialTrade.stopLoss,
+        takeProfit: initialTrade.takeProfit,
+        tp2: initialTrade.tp2 ?? undefined,
+        tp3: initialTrade.tp3 ?? undefined,
+        pnlPercent: initialTrade.pnlPercent,
+        outcome: initialTrade.outcome,
+        setupType: initialTrade.setupType,
+        tradeDate: new Date(initialTrade.tradeDate).toISOString().slice(0, 10),
+        notes: initialTrade.notes ?? "",
+      });
+    } else if (prefill) {
+      form.reset({
+        coin: "BTC/USDT",
+        direction: "LONG",
+        entryPrice: prefill.entryPrice ?? 0,
+        stopLoss: prefill.stopLoss ?? 0,
+        takeProfit: prefill.takeProfit ?? 0,
+        tp2: undefined,
+        tp3: undefined,
+        pnlPercent: 0,
+        outcome: "PENDING",
+        setupType: "Break & Retest",
+        tradeDate: new Date().toISOString().slice(0, 10),
+        notes: "",
+      });
+    }
+  }, [form, initialTrade, prefill]);
 
   const entryPrice = Number(form.watch("entryPrice") ?? 0);
   const stopLoss = Number(form.watch("stopLoss") ?? 0);
@@ -76,9 +94,11 @@ export function AddTradeModal({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{initialTrade ? "Edit Trade" : "Add Trade"}</DialogTitle>
+          <DialogTitle>{initialTrade ? "Edit Trade" : prefill ? "Log Calculator Trade" : "Add Trade"}</DialogTitle>
           <DialogDescription>
-            Log the setup, performance, and context behind the trade.
+            {prefill
+              ? "Pre-filled from your calculator. Confirm the details and save."
+              : "Log the setup, performance, and context behind the trade."}
           </DialogDescription>
         </DialogHeader>
         <form

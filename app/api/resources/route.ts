@@ -7,11 +7,25 @@ import { resourceSchema } from "@/lib/validators";
 export async function GET() {
   try {
     const user = await requireUser();
-    const resources = await prisma.resource.findMany({
-      where: user.role === "MEMBER" ? { isVipOnly: false } : undefined,
-      orderBy: { uploadedAt: "desc" },
+    const [resources, completions] = await Promise.all([
+      prisma.resource.findMany({ orderBy: { uploadedAt: "desc" } }),
+      prisma.resourceCompletion.findMany({
+        where: { userId: user.id },
+        select: { resourceId: true },
+      }),
+    ]);
+
+    const completedSet = new Set(completions.map((c) => c.resourceId));
+    const resourcesWithCompletion = resources.map((r) => ({
+      ...r,
+      completedByMe: completedSet.has(r.id),
+    }));
+
+    return Response.json({
+      resources: resourcesWithCompletion,
+      completedCount: completedSet.size,
+      totalCount: resources.length,
     });
-    return Response.json({ resources });
   } catch {
     return apiError("Unable to load resources.", 500);
   }

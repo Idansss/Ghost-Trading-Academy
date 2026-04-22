@@ -41,6 +41,7 @@ export function Sidebar({ user }: { user: Session["user"] }) {
           type="button"
           variant="ghost"
           size="icon"
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           onClick={() => setCollapsed((value) => !value)}
         >
           {collapsed ? (

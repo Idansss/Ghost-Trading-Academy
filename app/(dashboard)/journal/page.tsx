@@ -3,7 +3,8 @@
 import type { Trade } from "@prisma/client";
 import { BookOpenText, DownloadCloud, Plus } from "lucide-react";
 import { motion } from "framer-motion";
-import { useMemo, useState } from "react";
+import { useSearchParams as useNextSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { MetricCard } from "@/components/shared/MetricCard";
@@ -36,6 +37,7 @@ function toSearchParams(month: string, filters: TradeFilterState) {
 }
 
 export default function JournalPage() {
+  const nextSearchParams = useNextSearchParams();
   const [selectedMonth, setSelectedMonth] = useState(currentMonth);
   const [filters, setFilters] = useState<TradeFilterState>({
     search: "",
@@ -46,6 +48,30 @@ export default function JournalPage() {
     to: "",
   });
   const [isAddOpen, setIsAddOpen] = useState(false);
+
+  // Pre-fill from calculator: ?entry=&stopLoss=&takeProfit=&rr=
+  const [prefill, setPrefill] = useState<{
+    entryPrice?: number;
+    stopLoss?: number;
+    takeProfit?: number;
+    rrRatio?: number;
+  } | null>(null);
+
+  useEffect(() => {
+    const entry = nextSearchParams.get("entry");
+    const stopLoss = nextSearchParams.get("stopLoss");
+    const takeProfit = nextSearchParams.get("takeProfit");
+    const rr = nextSearchParams.get("rr");
+    if (entry && stopLoss && takeProfit) {
+      setPrefill({
+        entryPrice: Number(entry),
+        stopLoss: Number(stopLoss),
+        takeProfit: Number(takeProfit),
+        rrRatio: rr ? Number(rr) : undefined,
+      });
+      setIsAddOpen(true);
+    }
+  }, [nextSearchParams]);
   const [selectedTrade, setSelectedTrade] = useState<Trade | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const searchParams = useMemo(
@@ -199,7 +225,11 @@ export default function JournalPage() {
 
       <AddTradeModal
         open={isAddOpen}
-        onOpenChange={setIsAddOpen}
+        onOpenChange={(open) => {
+          setIsAddOpen(open);
+          if (!open) setPrefill(null);
+        }}
+        prefill={prefill ?? undefined}
         isSubmitting={createTrade.isPending}
         onSubmit={async (values) => {
           await createTrade.mutateAsync(values);

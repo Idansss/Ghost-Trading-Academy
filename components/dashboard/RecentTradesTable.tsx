@@ -11,8 +11,10 @@ export function RecentTradesTable({ trades }: { trades: Trade[] }) {
       <CardHeader>
         <CardTitle>Recent Trades</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table className="min-w-[640px] w-full">
+      <CardContent className="p-0">
+        <div className="overflow-x-auto">
+        <div className="min-w-max px-6 pb-6">
+        <Table className="min-w-[480px] w-full">
           <TableHeader>
             <TableRow>
               <TableHead>Date</TableHead>
@@ -49,6 +51,8 @@ export function RecentTradesTable({ trades }: { trades: Trade[] }) {
             ))}
           </TableBody>
         </Table>
+        </div>
+        </div>
       </CardContent>
     </Card>
   );

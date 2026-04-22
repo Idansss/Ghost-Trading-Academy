@@ -1,11 +1,40 @@
-import type { Signal } from "@prisma/client";
-import { ArrowUpRight, ArrowDownRight, Lightbulb } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
 
-export function SignalCard({ signal }: { signal: Signal }) {
+import type { Signal } from "@prisma/client";
+import { ArrowUpRight, ArrowDownRight, CheckCircle2, Circle, Lightbulb } from "lucide-react";
+import { useState } from "react";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { fetchJson } from "@/lib/client-api";
+import { cn } from "@/lib/utils";
+
+type SignalWithTaken = Signal & { takenByMe?: boolean };
+
+export function SignalCard({ signal }: { signal: SignalWithTaken }) {
   const bullish = signal.direction === "LONG";
+  const [taken, setTaken] = useState(signal.takenByMe ?? false);
+  const [isPending, setIsPending] = useState(false);
+
+  const handleToggle = async () => {
+    setIsPending(true);
+    const optimistic = !taken;
+    setTaken(optimistic);
+    try {
+      const res = await fetchJson<{ taken: boolean }>(`/api/signals/${signal.id}/take`, {
+        method: "POST",
+      });
+      setTaken(res.taken);
+      toast.success(res.taken ? "Signal marked as taken." : "Signal unmarked.");
+    } catch {
+      setTaken(!optimistic);
+      toast.error("Could not update signal status.");
+    } finally {
+      setIsPending(false);
+    }
+  };
 
   return (
     <Card>
@@ -35,9 +64,31 @@ export function SignalCard({ signal }: { signal: Signal }) {
             </div>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">
-          {formatDistanceToNow(new Date(signal.postedAt), { addSuffix: true })}
-        </p>
+        <div className="flex flex-col items-end gap-2">
+          <p className="text-xs text-muted-foreground">
+            {formatDistanceToNow(new Date(signal.postedAt), { addSuffix: true })}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isPending}
+            onClick={handleToggle}
+            className={cn(
+              "gap-2 text-xs transition-colors",
+              taken
+                ? "border-[color:var(--color-green)]/40 bg-[color:var(--color-green-light)] text-[color:var(--color-green)] hover:bg-[color:var(--color-green-light)]"
+                : "text-muted-foreground",
+            )}
+          >
+            {taken ? (
+              <CheckCircle2 className="h-3.5 w-3.5" />
+            ) : (
+              <Circle className="h-3.5 w-3.5" />
+            )}
+            {taken ? "Signal taken" : "I took this"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6">

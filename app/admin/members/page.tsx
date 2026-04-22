@@ -7,6 +7,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageTransition } from "@/components/layout/PageTransition";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -157,8 +158,9 @@ export default function AdminMembersPage() {
   return (
     <PageTransition>
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Members" }]} />
       <PageHeader
-        eyebrow="Admin Members"
+        eyebrow="Admin"
         title="Manage Members"
         description="Control roles and subscription status for every member account."
         action={
@@ -173,14 +175,15 @@ export default function AdminMembersPage() {
         <CardHeader>
           <CardTitle>Members</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 p-6">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="h-14 rounded-2xl bg-muted/50" />
               ))}
             </div>
           ) : isError ? (
+            <div className="p-6">
             <ErrorState
               title="Members unavailable"
               description="There was a problem loading the member table."
@@ -188,7 +191,10 @@ export default function AdminMembersPage() {
                 void refetch();
               }}
             />
+            </div>
           ) : data?.users.length ? (
+            <div className="overflow-x-auto">
+            <div className="min-w-max px-6 pb-6">
             <Table className="min-w-[640px] w-full">
               <TableHeader>
                 <TableRow>
@@ -311,12 +317,16 @@ export default function AdminMembersPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
+            </div>
           ) : (
+            <div className="p-6">
             <EmptyState
               icon={<Plus className="h-12 w-12" />}
               title="No members found"
               description="Create the first member account to populate the admin table."
             />
+            </div>
           )}
         </CardContent>
       </Card>

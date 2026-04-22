@@ -6,11 +6,7 @@ import { outlookSchema } from "@/lib/validators";
 
 export async function GET(request: Request) {
   try {
-    const user = await requireUser();
-
-    if (user.role === "MEMBER") {
-      return apiError("Forbidden", 403);
-    }
+    await requireUser();
 
     const { searchParams } = new URL(request.url);
     const date = searchParams.get("date");

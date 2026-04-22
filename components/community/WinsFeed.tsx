@@ -2,7 +2,8 @@
 
 import { Heart } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,11 +24,11 @@ export function WinsFeed({
     user: { name: string; avatarUrl: string | null };
   }>;
 }) {
-  const queryClient = useQueryClient();
+  const router = useRouter();
   const likeMutation = useMutation({
     mutationFn: (id: string) => fetchJson(`/api/member-wins/${id}/like`, { method: "POST" }),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["community"] });
+      router.refresh();
     },
   });
 
@@ -59,7 +60,12 @@ export function WinsFeed({
                     <span className="text-xs text-muted-foreground">
                       {formatDistanceToNow(new Date(win.createdAt), { addSuffix: true })}
                     </span>
-                    <Button variant="ghost" size="sm" onClick={() => likeMutation.mutate(win.id)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label={`Like ${win.user.name}'s ${win.coin} win`}
+                      onClick={() => likeMutation.mutate(win.id)}
+                    >
                       <Heart className="mr-2 h-4 w-4" />
                       {win.likesCount}
                     </Button>

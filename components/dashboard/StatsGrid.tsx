@@ -1,3 +1,5 @@
+"use client";
+
 import { motion } from "framer-motion";
 import { MetricCard } from "@/components/shared/MetricCard";
 import { formatPercent } from "@/lib/utils";

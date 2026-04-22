@@ -1,22 +1,24 @@
 "use client";
 
-import { Search } from "lucide-react";
 import type { Session } from "next-auth";
 import Link from "next/link";
+import type { GlobalSearchItem } from "@/components/layout/GlobalSearch";
+import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 export function Topbar({
   user,
   unreadCount,
+  searchItems,
 }: {
   user: Session["user"];
   unreadCount: number;
+  searchItems: GlobalSearchItem[];
 }) {
   const displayName = user.name ?? "Member";
   const initials = displayName
@@ -27,13 +29,10 @@ export function Topbar({
 
   return (
     <div className="sticky top-0 z-30">
-      <MobileHeader user={user} unreadCount={unreadCount} />
+      <MobileHeader user={user} unreadCount={unreadCount} searchItems={searchItems} />
       <header className="hidden h-20 items-center justify-between gap-4 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-6 md:flex">
         <div className="flex max-w-md flex-1 items-center gap-3">
-          <div className="relative w-full">
-            <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-10" placeholder="Search trades, signals, members..." />
-          </div>
+          <GlobalSearch items={searchItems} />
         </div>
 
         <div className="ml-auto flex items-center gap-2">

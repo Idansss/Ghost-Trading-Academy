@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageTransition } from "@/components/layout/PageTransition";
+import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { PostSignalForm } from "@/components/signals/PostSignalForm";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -78,6 +79,7 @@ export default function AdminSignalsPage() {
   return (
     <PageTransition>
     <div className="space-y-6">
+      <Breadcrumb items={[{ label: "Admin", href: "/admin" }, { label: "Signals" }]} />
       <PageHeader
         eyebrow="Admin Signals"
         title="Publish And Manage Signals"
@@ -95,14 +97,15 @@ export default function AdminSignalsPage() {
         <CardHeader>
           <CardTitle>Posted Signals</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {isLoading ? (
-            <div className="space-y-3">
+            <div className="space-y-3 p-6">
               {Array.from({ length: 5 }).map((_, index) => (
                 <div key={index} className="h-14 rounded-2xl bg-muted/50" />
               ))}
             </div>
           ) : isError ? (
+            <div className="p-6">
             <ErrorState
               title="Signals unavailable"
               description="There was a problem loading the admin signals table."
@@ -110,7 +113,10 @@ export default function AdminSignalsPage() {
                 void refetch();
               }}
             />
+            </div>
           ) : data?.signals.length ? (
+            <div className="overflow-x-auto">
+            <div className="min-w-max px-6 pb-6">
             <Table className="min-w-[640px] w-full">
               <TableHeader>
                 <TableRow>
@@ -214,12 +220,16 @@ export default function AdminSignalsPage() {
                 })}
               </TableBody>
             </Table>
+            </div>
+            </div>
           ) : (
+            <div className="p-6">
             <EmptyState
               icon={<Pencil className="h-12 w-12" />}
               title="No signals posted yet"
               description="Create your first signal to populate the admin desk."
             />
+            </div>
           )}
         </CardContent>
       </Card>

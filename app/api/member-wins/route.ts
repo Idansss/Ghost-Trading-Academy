@@ -3,10 +3,14 @@ import { prisma } from "@/lib/prisma";
 import { apiError, safeJson } from "@/lib/utils";
 import { memberWinSchema } from "@/lib/validators";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    await requireUser();
+    const user = await requireUser();
+    const { searchParams } = new URL(request.url);
+    const adminAll = searchParams.get("all") === "true" && user.role === "ADMIN";
+
     const wins = await prisma.memberWin.findMany({
+      where: adminAll ? undefined : { isApproved: true },
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -16,7 +20,7 @@ export async function GET() {
           },
         },
       },
-      take: 30,
+      take: adminAll ? 100 : 30,
     });
     return Response.json({ wins });
   } catch {

@@ -1,59 +1,46 @@
-"use client";
-
-import type { Announcement, MemberWin, WeeklyRecap } from "@prisma/client";
-import { useQuery } from "@tanstack/react-query";
-import { PageTransition } from "@/components/layout/PageTransition";
-import { PageHeader } from "@/components/shared/PageHeader";
-import { CommunitySkeleton } from "@/components/skeletons/CommunitySkeleton";
 import { AnnouncementFeed } from "@/components/community/AnnouncementFeed";
 import { MonthlySnapshotGrid } from "@/components/community/MonthlySnapshotGrid";
 import { WeeklyRecapCard } from "@/components/community/WeeklyRecapCard";
-import { WinsFeed } from "@/components/community/WinsFeed";
-import { ErrorState } from "@/components/ui/ErrorState";
-import { fetchJson } from "@/lib/client-api";
+import { RecapArchive } from "@/components/community/RecapArchive";
+import { WinsFeedClient } from "@/components/community/WinsFeedClient";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { requireUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { getMonthlySnapshot } from "@/lib/calculations";
 
-export default function CommunityPage() {
-  const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["community"],
-    queryFn: async () => {
-      const [announcements, wins, recaps, trades] = await Promise.all([
-        fetchJson<{ announcements: Announcement[] }>("/api/announcements"),
-        fetchJson<{
-          wins: Array<
-            MemberWin & { user: { name: string; avatarUrl: string | null } }
-          >;
-        }>("/api/member-wins"),
-        fetchJson<{ recaps: WeeklyRecap[] }>("/api/weekly-recaps"),
-        fetchJson<{ summary: { snapshot: Record<string, number> } }>("/api/trades"),
-      ]);
+export default async function CommunityPage() {
+  const user = await requireUser();
+  const [announcements, wins, recaps, trades] = await Promise.all([
+    prisma.announcement.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    }),
+    prisma.memberWin.findMany({
+      where: { isApproved: true },
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            name: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      take: 30,
+    }),
+    prisma.weeklyRecap.findMany({
+      orderBy: { weekStartDate: "desc" },
+    }),
+    prisma.trade.findMany({
+      where: { userId: user.id },
+      select: { tradeDate: true, pnlPercent: true },
+      orderBy: { tradeDate: "desc" },
+    }),
+  ]);
 
-      return {
-        announcements: announcements.announcements,
-        wins: wins.wins,
-        recaps: recaps.recaps,
-        snapshot: trades.summary.snapshot,
-      };
-    },
-  });
-
-  if (isLoading) {
-    return <CommunitySkeleton />;
-  }
-
-  if (isError || !data) {
-    return (
-      <ErrorState
-        title="Community unavailable"
-        description="The feed could not be loaded right now."
-        onRetry={() => {
-          void refetch();
-        }}
-      />
-    );
-  }
+  const [latestRecap, ...pastRecaps] = recaps;
 
   return (
-    <PageTransition>
     <div className="space-y-6">
       <PageHeader
         eyebrow="Community"
@@ -63,20 +50,25 @@ export default function CommunityPage() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.45fr_1fr]">
         <div className="space-y-6">
-          <AnnouncementFeed announcements={data.announcements} />
-          <WinsFeed wins={data.wins} />
+          <AnnouncementFeed announcements={announcements} />
+          <WinsFeedClient
+            initialWins={wins}
+            userId={user.id}
+            userName={user.name ?? ""}
+            userAvatarUrl={user.avatarUrl ?? null}
+          />
         </div>
         <div className="space-y-6">
-          <WeeklyRecapCard recap={data.recaps[0] ?? null} />
+          <WeeklyRecapCard recap={latestRecap ?? null} />
+          {pastRecaps.length > 0 && <RecapArchive recaps={pastRecaps} />}
           <div className="surface-card p-6">
             <h2 className="text-lg font-semibold">Monthly Snapshot</h2>
             <div className="mt-4">
-              <MonthlySnapshotGrid snapshot={data.snapshot} />
+              <MonthlySnapshotGrid snapshot={getMonthlySnapshot(trades)} />
             </div>
           </div>
         </div>
       </div>
     </div>
-    </PageTransition>
   );
 }

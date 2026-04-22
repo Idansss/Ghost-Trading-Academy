@@ -13,7 +13,7 @@ export function SubscriptionBanner({
 }) {
   const [dismissed, setDismissed] = useState(false);
   const todayKey = new Date().toISOString().slice(0, 10);
-  const storageKey = `apex-vip-banner-dismissed-${todayKey}`;
+  const storageKey = `ghost-vip-banner-dismissed-${todayKey}`;
 
   const bannerState = useMemo(() => {
     if (!user.subscriptionExpiry) {

@@ -6,6 +6,7 @@ import {
   Compass,
   GraduationCap,
   LayoutGrid,
+  Megaphone,
   Shield,
   Users,
   Zap,
@@ -33,6 +34,17 @@ export const adminNav: NavigationItem = {
   label: "Admin Panel",
   icon: Shield,
 };
+
+export const adminSubNav: NavigationItem[] = [
+  { href: "/admin", label: "Overview", icon: LayoutGrid },
+  { href: "/admin/members", label: "Members", icon: Users },
+  { href: "/admin/signals", label: "Signals", icon: Zap },
+  { href: "/admin/resources", label: "Resources", icon: BookOpenText },
+  { href: "/admin/outlook", label: "Outlook", icon: Compass },
+  { href: "/admin/recaps", label: "Recaps", icon: BarChart3 },
+  { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/admin/wins", label: "Win Moderation", icon: Users },
+];
 
 export function isPathActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
