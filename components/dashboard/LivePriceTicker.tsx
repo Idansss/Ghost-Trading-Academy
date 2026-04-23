@@ -227,58 +227,55 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
 
   return (
     <div className="sticky top-16 z-20 border-b border-border bg-background/95 backdrop-blur md:top-20">
-      <div className="overflow-x-auto">
-        <div className="flex min-w-max items-center gap-3 px-4 py-2 sm:px-6 lg:px-8">
-          {orderedItems.map((item, index) => {
-            const positive = item.changePercent >= 0;
+      {/* flex-nowrap + overflow-x-auto on mobile so nothing is ever clipped;
+          on sm+ the cards stretch to fill the full bar width via flex-1 */}
+      <div className="flex items-center gap-2 overflow-x-auto px-4 py-2 sm:gap-3 sm:px-6 lg:px-8">
+        {orderedItems.map((item) => {
+          const positive = item.changePercent >= 0;
 
-            return (
-              <div
-                key={item.symbol}
-                className={cn(
-                  "flex shrink-0 items-center gap-3 rounded-2xl border border-border bg-card px-3 py-2",
-                  index >= 3 && "hidden md:flex",
-                )}
-              >
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold" data-number="true">
-                    {item.price ? `$${formatPrice(item.price)}` : "--"}
-                  </p>
-                </div>
-                <div
-                  className={cn(
-                    "flex items-center gap-1 text-sm font-medium",
-                    positive
-                      ? "text-[color:var(--color-green)]"
-                      : "text-[color:var(--color-red)]",
-                  )}
-                  data-number="true"
-                >
-                  {positive ? (
-                    <ArrowUpRight className="h-4 w-4" />
-                  ) : (
-                    <ArrowDownRight className="h-4 w-4" />
-                  )}
-                  {item.changePercent.toFixed(2)}%
-                </div>
+          return (
+            <div
+              key={item.symbol}
+              className="flex min-w-[120px] flex-1 items-center justify-between gap-2 rounded-2xl border border-border bg-card px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {item.label}
+                </p>
+                <p className="mt-1 text-sm font-semibold" data-number="true">
+                  {item.price ? `$${formatPrice(item.price)}` : "--"}
+                </p>
               </div>
-            );
-          })}
-
-          {connectionState !== "connected" ? (
-            <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
-              <WifiOff className="h-3.5 w-3.5" />
-              <span>
-                {fallbackQuery.isFetching
-                  ? "Reconnecting… using fallback"
-                  : "Reconnecting…"}
-              </span>
+              <div
+                className={cn(
+                  "flex shrink-0 items-center gap-1 text-sm font-medium",
+                  positive
+                    ? "text-[color:var(--color-green)]"
+                    : "text-[color:var(--color-red)]",
+                )}
+                data-number="true"
+              >
+                {positive ? (
+                  <ArrowUpRight className="h-4 w-4" />
+                ) : (
+                  <ArrowDownRight className="h-4 w-4" />
+                )}
+                {item.changePercent.toFixed(2)}%
+              </div>
             </div>
-          ) : null}
-        </div>
+          );
+        })}
+
+        {connectionState !== "connected" ? (
+          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+            <WifiOff className="h-3.5 w-3.5" />
+            <span>
+              {fallbackQuery.isFetching
+                ? "Reconnecting… using fallback"
+                : "Reconnecting…"}
+            </span>
+          </div>
+        ) : null}
       </div>
     </div>
   );
