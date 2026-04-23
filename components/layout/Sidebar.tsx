@@ -22,7 +22,7 @@ export function Sidebar({ user }: { user: Session["user"] }) {
   return (
     <aside
       className={cn(
-        "hidden h-screen flex-col border-r border-border bg-card/80 px-4 py-5 backdrop-blur md:flex",
+        "hidden h-full flex-col border-r border-border bg-card/80 px-4 py-5 backdrop-blur md:flex",
         collapsed ? "w-[92px]" : "w-[280px]",
       )}
     >

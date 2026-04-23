@@ -1,8 +1,9 @@
 "use client";
 
 import type { Session } from "next-auth";
+import { signOut } from "next-auth/react";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { LogOut, Menu, User as UserIcon } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { MobileSearch } from "@/components/layout/MobileSearch";
 import type { GlobalSearchItem } from "@/components/layout/GlobalSearch";
@@ -104,6 +105,26 @@ export function MobileHeader({
                   <span className="status-dot bg-current" />
                   {user.role}
                 </Badge>
+              </div>
+              <div className="mt-4 flex flex-col gap-2">
+                <SheetClose asChild>
+                  <Button asChild variant="outline" className="justify-start gap-2">
+                    <Link href="/profile">
+                      <UserIcon className="h-4 w-4" />
+                      Profile
+                    </Link>
+                  </Button>
+                </SheetClose>
+                <Button
+                  variant="ghost"
+                  className="justify-start gap-2 text-destructive hover:text-destructive"
+                  onClick={() => {
+                    void signOut({ redirectTo: "/auth/login" });
+                  }}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Log out
+                </Button>
               </div>
             </div>
           </div>

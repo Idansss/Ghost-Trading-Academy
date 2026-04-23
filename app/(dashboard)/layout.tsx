@@ -116,15 +116,18 @@ export default async function DashboardLayout({
   ];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div
+      data-app-shell="dashboard"
+      className="flex h-dvh min-h-0 overflow-hidden bg-background"
+    >
       <Sidebar user={session.user} />
-      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar user={session.user} unreadCount={unreadCount} searchItems={searchItems} />
         {session.user.role !== "ADMIN" ? (
           <PushPermissionPrompt appId={env.onesignalAppId} userId={session.user.id} />
         ) : null}
         <LivePriceTicker symbols={siteConfig.tickerSymbols} />
-        <main className="flex-1 overflow-y-auto px-4 pt-6 pb-20 sm:px-6 md:pb-6 lg:px-8">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pt-5 pb-[calc(1rem+4rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-6 md:pb-8 lg:px-8">
           {children}
         </main>
         <AddToHomeScreenPrompt />
