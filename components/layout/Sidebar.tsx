@@ -11,8 +11,6 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { adminNav, isPathActive, primaryNav } from "@/components/layout/navigation";
 import { Logo } from "@/components/shared/Logo";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -20,12 +18,6 @@ export function Sidebar({ user }: { user: Session["user"] }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const AdminIcon = adminNav.icon;
-  const displayName = user.name ?? "Member";
-  const initials = displayName
-    .split(" ")
-    .slice(0, 2)
-    .map((value) => value[0])
-    .join("");
 
   return (
     <aside
@@ -91,36 +83,6 @@ export function Sidebar({ user }: { user: Session["user"] }) {
           </Link>
         ) : null}
       </nav>
-
-      <div className="surface-elevated rounded-3xl border border-border p-4">
-        <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-          <Avatar>
-            <AvatarImage src={user.avatarUrl ?? undefined} alt={displayName} />
-            <AvatarFallback>{initials}</AvatarFallback>
-          </Avatar>
-          {!collapsed ? (
-            <div className="min-w-0">
-              <p className="truncate text-sm font-medium">{displayName}</p>
-            </div>
-          ) : null}
-        </div>
-        {!collapsed ? (
-          <div className="mt-3">
-            <Badge
-              variant={
-                user.role === "VIP" || user.role === "ADMIN" ? "default" : "muted"
-              }
-            >
-              <span className="status-dot bg-current" />
-              {user.role === "ADMIN"
-                ? "Admin"
-                : user.role === "VIP"
-                  ? "VIP"
-                  : "Member"}
-            </Badge>
-          </div>
-        ) : null}
-      </div>
     </aside>
   );
 }
