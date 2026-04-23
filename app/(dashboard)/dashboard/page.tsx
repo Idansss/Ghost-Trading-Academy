@@ -3,8 +3,11 @@ import { DecisionSupportCards } from "@/components/dashboard/DecisionSupportCard
 import { EquityChart } from "@/components/dashboard/EquityChart";
 import { MonthlyPnlChart } from "@/components/dashboard/MonthlyPnlChart";
 import { OnboardingChecklist } from "@/components/dashboard/OnboardingChecklist";
+import { OnboardingResumeBanner } from "@/components/dashboard/OnboardingResumeBanner";
 import { RecentTradesTable } from "@/components/dashboard/RecentTradesTable";
 import { StatsGrid } from "@/components/dashboard/StatsGrid";
+import { StreakCard } from "@/components/dashboard/StreakCard";
+import { WatchlistWidget } from "@/components/dashboard/WatchlistWidget";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,16 +30,29 @@ export default async function DashboardPage() {
         description="Track performance, lock onto the current bias, and turn your journal into sharper execution."
       />
 
-      <OnboardingChecklist {...data.onboarding} />
-      <StatsGrid {...data.kpis} />
-      <DecisionSupportCards
-        latestOutlook={data.latestOutlook}
-        activeSignals={data.activeSignals}
-        bestSetup={data.bestSetup}
-        weakestWeekday={data.weakestWeekday}
-        latestTrade={data.latestTrade}
-        focusItems={data.focusItems}
+      <OnboardingResumeBanner
+        completed={data.onboarding.completed}
+        completedCount={data.onboarding.completedCount}
+        totalSteps={data.onboarding.totalSteps}
+        progressPercent={data.onboarding.progressPercent}
+        nextStepTitle={data.onboarding.nextStep?.title ?? null}
       />
+      <OnboardingChecklist {...data.onboarding} />
+      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
+        <div className="space-y-6">
+          <StatsGrid {...data.kpis} />
+          <DecisionSupportCards
+            latestOutlook={data.latestOutlook}
+            activeSignals={data.activeSignals}
+            bestSetup={data.bestSetup}
+            weakestWeekday={data.weakestWeekday}
+            latestTrade={data.latestTrade}
+            focusItems={data.focusItems}
+          />
+        </div>
+
+        <StreakCard {...data.streak} />
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
         <div className="space-y-6">
@@ -99,6 +115,18 @@ export default async function DashboardPage() {
               </Link>
             </CardContent>
           </Card>
+          <WatchlistWidget />
+
+          {data.pinnedFocus ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Weekly Focus Reminder</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground">{data.pinnedFocus}</p>
+              </CardContent>
+            </Card>
+          ) : null}
         </div>
       </div>
     </div>

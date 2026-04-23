@@ -23,7 +23,10 @@ type NotificationsResponse = {
       | "NEW_RESOURCE"
       | "WEEKLY_RECAP"
       | "ANNOUNCEMENT"
-      | "SYSTEM";
+      | "SYSTEM"
+      | "NEW_ANNOUNCEMENT"
+      | "DIRECT_MESSAGE"
+      | "BROADCAST";
     title: string;
     message: string;
     isRead: boolean;
@@ -51,8 +54,8 @@ export function NotificationBell({
     queryKey: ["notifications", "unread-count"],
     queryFn: () => fetchJson<{ unreadCount: number }>("/api/notifications?mode=count"),
     initialData: { unreadCount: initialUnreadCount },
-    // TODO: replace polling with WebSocket/SSE push for real-time signal alerts
-    refetchInterval: 10_000,
+    // Poll every 60s as a simple real-time fallback.
+    refetchInterval: 60_000,
   });
 
   const notificationsQuery = useQuery({

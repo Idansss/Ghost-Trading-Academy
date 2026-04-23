@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchJson } from "@/lib/client-api";
 import type { z } from "zod";
-import type { signalSchema } from "@/lib/validators";
+import type { signalPatchSchema, signalSchema } from "@/lib/validators";
 
 /**
  * Loads signals by status filter.
@@ -30,6 +30,7 @@ export function useSignalMutations() {
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ["signals"] });
     await queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    await queryClient.invalidateQueries({ queryKey: ["signal-stats"] });
   };
 
   const createSignal = useMutation({
@@ -46,7 +47,7 @@ export function useSignalMutations() {
   });
 
   const updateSignal = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Partial<z.input<typeof signalSchema>> }) =>
+    mutationFn: ({ id, payload }: { id: string; payload: z.input<typeof signalPatchSchema> }) =>
       fetchJson<Signal>(`/api/signals/${id}`, {
         method: "PATCH",
         body: JSON.stringify(payload),
@@ -60,7 +61,7 @@ export function useSignalMutations() {
 
   const deleteSignal = useMutation({
     mutationFn: (id: string) =>
-      fetchJson<{ ok: true }>(`/api/signals/${id}`, { method: "DELETE" }),
+      fetchJson<void>(`/api/signals/${id}`, { method: "DELETE" }),
     onSuccess: async () => {
       toast.success("Signal deleted.");
       await invalidate();

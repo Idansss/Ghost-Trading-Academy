@@ -3,11 +3,17 @@
 import { RadialBar, RadialBarChart, ResponsiveContainer } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function WinRateGauge({ value }: { value: number }) {
+export function WinRateGauge({
+  value,
+  title = "Filtered Win Rate",
+}: {
+  value: number;
+  title?: string;
+}) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Selected Month Win Rate</CardTitle>
+        <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="h-[260px]">
         <ResponsiveContainer width="100%" height="100%">

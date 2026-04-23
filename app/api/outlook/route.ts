@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { apiError, safeJson } from "@/lib/utils";
 import { outlookSchema } from "@/lib/validators";
 
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     await requireUser();
@@ -17,7 +20,8 @@ export async function GET(request: Request) {
     });
 
     return Response.json({ outlook });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to load outlook.", 500);
   }
 }
@@ -30,7 +34,7 @@ export async function POST(request: Request) {
 
     if (!parsed.success) {
       return Response.json(
-        { message: "Invalid outlook payload.", errors: parsed.error.flatten().fieldErrors },
+        { error: "Validation failed.", details: parsed.error.flatten() },
         { status: 422 },
       );
     }
@@ -59,7 +63,8 @@ export async function POST(request: Request) {
     });
 
     return Response.json(outlook);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to save outlook.", 500);
   }
 }

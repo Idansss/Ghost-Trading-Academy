@@ -7,11 +7,11 @@ import {
 } from "@/lib/calculations";
 
 export interface CalculatorInput {
-  balance: number;
-  riskPercent: number;
-  entry: number;
-  stopLoss: number;
-  takeProfit: number;
+  balance: number | "";
+  riskPercent: number | "";
+  entry: number | "";
+  stopLoss: number | "";
+  takeProfit: number | "";
 }
 
 /**
@@ -27,13 +27,19 @@ export function useCalculator(initialState?: Partial<CalculatorInput>) {
   });
 
   const results = useMemo(() => {
-    const maxRiskAmount = state.balance * (state.riskPercent / 100);
-    const rrRatio = calculateRR(state.entry, state.stopLoss, state.takeProfit);
+    const balance = Number(state.balance) || 0;
+    const riskPercent = Number(state.riskPercent) || 0;
+    const entry = Number(state.entry) || 0;
+    const stopLoss = Number(state.stopLoss) || 0;
+    const takeProfit = Number(state.takeProfit) || 0;
+
+    const maxRiskAmount = balance * (riskPercent / 100);
+    const rrRatio = calculateRR(entry, stopLoss, takeProfit);
     const positionSize = calculatePositionSize(
-      state.balance,
-      state.riskPercent,
-      state.entry,
-      state.stopLoss,
+      balance,
+      riskPercent,
+      entry,
+      stopLoss,
     );
     const potentialProfit = maxRiskAmount * rrRatio;
 

@@ -1,0 +1,14 @@
+ALTER TABLE "Trade"
+ADD COLUMN "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];
+
+CREATE TABLE "TradeTag" (
+    "id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "color" TEXT NOT NULL DEFAULT '#888888',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "TradeTag_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "TradeTag_name_key" ON "TradeTag"("name");

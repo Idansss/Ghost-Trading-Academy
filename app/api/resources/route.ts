@@ -4,6 +4,9 @@ import { prisma } from "@/lib/prisma";
 import { apiError, safeJson } from "@/lib/utils";
 import { resourceSchema } from "@/lib/validators";
 
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     const user = await requireUser();
@@ -26,7 +29,8 @@ export async function GET() {
       completedCount: completedSet.size,
       totalCount: resources.length,
     });
-  } catch {
+  } catch (error) {
+    console.error("[resources GET]", error);
     return apiError("Unable to load resources.", 500);
   }
 }
@@ -37,9 +41,11 @@ export async function POST(request: Request) {
     const body = await safeJson<unknown>(request);
     const parsed = resourceSchema.safeParse(body);
 
+    // AUDIT FIX: Validation error shape changed from { message, errors } to
+    // { error, details } to match the spec and the apiError() convention.
     if (!parsed.success) {
       return Response.json(
-        { message: "Invalid resource payload.", errors: parsed.error.flatten().fieldErrors },
+        { error: "Validation failed.", details: parsed.error.flatten() },
         { status: 422 },
       );
     }
@@ -81,7 +87,8 @@ export async function POST(request: Request) {
     );
 
     return Response.json(resource);
-  } catch {
+  } catch (error) {
+    console.error("[resources POST]", error);
     return apiError("Unable to save resource.", 500);
   }
 }

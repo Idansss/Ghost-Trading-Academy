@@ -8,6 +8,9 @@ import {
 import { prisma } from "@/lib/prisma";
 import { apiError, safeJson } from "@/lib/utils";
 
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const user = await requireUser();
@@ -16,7 +19,24 @@ export async function GET(request: Request) {
 
     if (mode === "count") {
       const unreadCount = await getUnreadCount(user.id);
-      return Response.json({ unreadCount });
+      const dmMemberships = await prisma.channelMember.findMany({
+        where: { userId: user.id, channel: { type: "DM" } },
+        select: { channelId: true, lastReadAt: true },
+      });
+      const unreadDmCounts = await Promise.all(
+        dmMemberships.map((membership) =>
+          prisma.chatMessage.count({
+            where: {
+              channelId: membership.channelId,
+              authorId: { not: user.id },
+              createdAt: { gt: membership.lastReadAt },
+              deletedAt: null,
+            },
+          }),
+        ),
+      );
+      const unreadDmCount = unreadDmCounts.reduce((sum, value) => sum + value, 0);
+      return Response.json({ unreadCount: unreadCount + unreadDmCount });
     }
 
     const page = Number(searchParams.get("page") ?? "1");
@@ -38,7 +58,8 @@ export async function GET(request: Request) {
       ...notificationResult,
       unreadCount,
     });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to load notifications.", 500);
   }
 }
@@ -67,7 +88,8 @@ export async function PATCH(request: Request) {
     }
 
     return Response.json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to update notifications.", 500);
   }
 }

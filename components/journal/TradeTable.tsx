@@ -2,6 +2,7 @@
 
 import type { Trade } from "@prisma/client";
 import { format } from "date-fns";
+import { ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -153,7 +154,36 @@ export function TradeTable({
               className="cursor-pointer transition-colors hover:bg-accent/40"
             >
               <TableCell>{format(new Date(trade.tradeDate), "MMM d, yyyy")}</TableCell>
-              <TableCell className="font-medium">{trade.coin}</TableCell>
+              <TableCell>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{trade.coin}</p>
+                    {trade.chartImageUrl ? (
+                      <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                        <ImageIcon className="mr-1 h-3 w-3" />
+                        Chart
+                      </span>
+                    ) : null}
+                  </div>
+                  {trade.tags.length ? (
+                    <div className="flex flex-wrap gap-1">
+                      {trade.tags.slice(0, 2).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                      {trade.tags.length > 2 ? (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                          +{trade.tags.length - 2}
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : null}
+                </div>
+              </TableCell>
               <TableCell>
                 <Badge variant={trade.direction === "LONG" ? "success" : "danger"}>
                   <span className="status-dot bg-current" />

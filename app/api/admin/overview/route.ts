@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { apiError, getMonthKey } from "@/lib/utils";
 import { subDays, startOfDay } from "date-fns";
 
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
+
 export async function GET() {
   try {
     await requireAdmin();
@@ -14,7 +17,7 @@ export async function GET() {
 
     const [
       totalMembers,
-      totalVipMembers,
+      totalVipUsers,
       totalSignalsThisMonth,
       totalTradesLogged,
       recentMembers,
@@ -95,7 +98,7 @@ export async function GET() {
 
     return Response.json({
       totalMembers,
-      totalVipMembers,
+      totalVipUsers,
       totalSignalsThisMonth,
       totalTradesLogged,
       activityFeed,
@@ -105,7 +108,8 @@ export async function GET() {
         postedAt: s.postedAt.toISOString(),
       })),
     });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to load admin overview.", 500);
   }
 }

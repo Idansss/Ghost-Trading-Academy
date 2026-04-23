@@ -3,6 +3,9 @@ import { prisma } from "@/lib/prisma";
 import { apiError, safeJson } from "@/lib/utils";
 import { memberWinSchema } from "@/lib/validators";
 
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
+
 export async function GET(request: Request) {
   try {
     const user = await requireUser();
@@ -23,7 +26,8 @@ export async function GET(request: Request) {
       take: adminAll ? 100 : 30,
     });
     return Response.json({ wins });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to load member wins.", 500);
   }
 }
@@ -35,7 +39,7 @@ export async function POST(request: Request) {
     const parsed = memberWinSchema.safeParse(body);
     if (!parsed.success) {
       return Response.json(
-        { message: "Invalid member win payload.", errors: parsed.error.flatten().fieldErrors },
+        { error: "Validation failed.", details: parsed.error.flatten() },
         { status: 422 },
       );
     }
@@ -48,7 +52,8 @@ export async function POST(request: Request) {
     });
 
     return Response.json(win);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to share member win.", 500);
   }
 }

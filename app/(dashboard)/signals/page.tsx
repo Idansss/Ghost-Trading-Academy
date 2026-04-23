@@ -1,12 +1,14 @@
 import { Zap } from "lucide-react";
+import { SignalsWinRateBadge } from "@/components/signals/SignalsWinRateBadge";
 import { SignalFilters } from "@/components/signals/SignalFilters";
 import { SignalCard } from "@/components/signals/SignalCard";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { signalFilterStatuses } from "@/lib/signal-performance";
 
-type SignalStatus = "ALL" | "ACTIVE" | "PENDING" | "WIN" | "LOSS" | "CANCELLED";
+type SignalStatus = (typeof signalFilterStatuses)[number];
 
 export default async function SignalsPage({
   searchParams,
@@ -27,6 +29,7 @@ export default async function SignalsPage({
         eyebrow="Signals"
         title="Trade Signals"
         description="Admin-issued setups with entries, invalidation, and structured targets."
+        action={<SignalsWinRateBadge />}
       />
       <SignalFilters value={status} />
 

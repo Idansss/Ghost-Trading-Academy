@@ -32,11 +32,17 @@ export function calculatePositionSize(
 
 /**
  * Calculates the win rate for a list of trades.
+ * AUDIT FIX: Previously included PENDING and CANCELLED trades in the denominator,
+ * which skewed the win rate downward for active traders. Win rate is now calculated
+ * only over settled outcomes (WIN, LOSS, BREAKEVEN).
  */
 export function calculateWinRate(trades: Pick<Trade, "outcome">[]): number {
-  if (!trades.length) return 0;
-  const wins = trades.filter((trade) => trade.outcome === "WIN").length;
-  return (wins / trades.length) * 100;
+  const settled = trades.filter(
+    (trade) => trade.outcome === "WIN" || trade.outcome === "LOSS" || trade.outcome === "BREAKEVEN",
+  );
+  if (!settled.length) return 0;
+  const wins = settled.filter((trade) => trade.outcome === "WIN").length;
+  return (wins / settled.length) * 100;
 }
 
 /**
@@ -109,9 +115,16 @@ export function getEquityCurve(
  * Finds the best performing trade setup by win rate.
  */
 export function getBestSetup(
-  trades: Pick<Trade, "setupType" | "outcome">[],
-): { setup: string; winRate: number; count: number } {
-  const setups = trades.reduce<Record<string, { wins: number; total: number }>>(
+  trades: Pick<Trade, "setupType" | "outcome" | "tags" | "pnlPercent">[],
+): { setup: string; winRate: number; count: number; tagContext: string | null } {
+  // AUDIT FIX: Previously counted ALL outcomes (including PENDING / CANCELLED) in
+  // total, diluting win rates vs. the KPI calculateWinRate which only counts settled
+  // (WIN / LOSS / BREAKEVEN) outcomes. Filter first so definitions are consistent.
+  const settledTrades = trades.filter(
+    (t) => t.outcome === "WIN" || t.outcome === "LOSS" || t.outcome === "BREAKEVEN",
+  );
+
+  const setups = settledTrades.reduce<Record<string, { wins: number; total: number }>>(
     (accumulator, trade) => {
       if (!accumulator[trade.setupType]) {
         accumulator[trade.setupType] = { wins: 0, total: 0 };
@@ -127,18 +140,59 @@ export function getBestSetup(
     {},
   );
 
+  // AUDIT FIX: Require a minimum of 3 trades per setup type before surfacing it
+  // as a "best setup". A single winning trade on a rare setup is meaningless signal.
   const [setup = "", values = { wins: 0, total: 0 }] =
-    Object.entries(setups).sort((left, right) => {
-      const leftRate = left[1].total ? left[1].wins / left[1].total : 0;
-      const rightRate = right[1].total ? right[1].wins / right[1].total : 0;
-      return rightRate - leftRate;
-    })[0] ?? [];
+    Object.entries(setups)
+      .filter(([, value]) => value.total >= 3)
+      .sort((left, right) => {
+        const leftRate = left[1].total ? left[1].wins / left[1].total : 0;
+        const rightRate = right[1].total ? right[1].wins / right[1].total : 0;
+        return rightRate - leftRate;
+      })[0] ?? [];
+
+  // AUDIT FIX: Use only settled trades (already filtered above) for tag context.
+  const matchingTrades = settledTrades.filter((trade) => trade.setupType === setup);
+  const tagSummary = getTagPerformance(matchingTrades)
+    .filter((entry) => entry.count >= 2 && entry.winRate >= 50)
+    .sort((left, right) => right.winRate - left.winRate || right.count - left.count)[0] ?? null;
 
   return {
     setup,
     winRate: values.total ? (values.wins / values.total) * 100 : 0,
     count: values.total,
+    tagContext: tagSummary?.tag ?? null,
   };
+}
+
+export function getTagPerformance(
+  trades: Pick<Trade, "tags" | "outcome" | "pnlPercent">[],
+) {
+  const tags = trades.reduce<Record<string, { wins: number; total: number; pnl: number }>>(
+    (accumulator, trade) => {
+      for (const tag of trade.tags ?? []) {
+        if (!accumulator[tag]) {
+          accumulator[tag] = { wins: 0, total: 0, pnl: 0 };
+        }
+
+        accumulator[tag].total += 1;
+        accumulator[tag].pnl += trade.pnlPercent;
+        if (trade.outcome === "WIN") {
+          accumulator[tag].wins += 1;
+        }
+      }
+
+      return accumulator;
+    },
+    {},
+  );
+
+  return Object.entries(tags).map(([tag, value]) => ({
+    tag,
+    count: value.total,
+    winRate: value.total ? (value.wins / value.total) * 100 : 0,
+    avgPnl: value.total ? value.pnl / value.total : 0,
+  }));
 }
 
 /**

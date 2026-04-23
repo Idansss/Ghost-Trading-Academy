@@ -3,8 +3,7 @@
 import { useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-const signalStatuses = ["ALL", "ACTIVE", "PENDING", "WIN", "LOSS", "CANCELLED"] as const;
+import { signalFilterStatuses } from "@/lib/signal-performance";
 
 export function SignalFilters({ value }: { value: string }) {
   const router = useRouter();
@@ -29,7 +28,7 @@ export function SignalFilters({ value }: { value: string }) {
   return (
     <Tabs value={value} onValueChange={handleValueChange}>
       <TabsList className="w-full flex-wrap justify-start">
-        {signalStatuses.map((item) => (
+        {signalFilterStatuses.map((item) => (
           <TabsTrigger key={item} value={item}>
             {item}
           </TabsTrigger>

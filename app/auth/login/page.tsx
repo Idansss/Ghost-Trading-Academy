@@ -40,6 +40,24 @@ export default function LoginPage() {
 
   const onSubmit = handleSubmit(async (values) => {
     setIsSubmitting(true);
+    const challenge = await fetch("/api/auth/2fa/challenge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: values.email,
+        password: values.password,
+      }),
+    });
+    const challengeJson = (await challenge.json()) as {
+      requiresTwoFactor?: boolean;
+      token?: string;
+    };
+
+    if (challengeJson.requiresTwoFactor && challengeJson.token) {
+      router.push(`/auth/2fa?token=${encodeURIComponent(challengeJson.token)}`);
+      return;
+    }
+
     const result = await signIn("credentials", {
       email: values.email,
       password: values.password,

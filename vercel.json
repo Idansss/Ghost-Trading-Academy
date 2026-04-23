@@ -1,0 +1,9 @@
+{
+  "buildCommand": "npm run build:vercel",
+  "crons": [
+    {
+      "path": "/api/cron/monthly-reports",
+      "schedule": "0 9 1 * *"
+    }
+  ]
+}

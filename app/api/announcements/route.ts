@@ -1,7 +1,12 @@
 import { requireAdmin, requireUser } from "@/lib/auth";
-import { createNotification } from "@/lib/actions/notifications";
+import { sendNotification } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
+import { sanitizeHtml } from "@/lib/sanitize";
+import { logAdminAction } from "@/lib/audit-log";
 import { apiError, safeJson } from "@/lib/utils";
+
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
@@ -11,7 +16,8 @@ export async function GET() {
       take: 20,
     });
     return Response.json({ announcements });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to load announcements.", 500);
   }
 }
@@ -23,7 +29,7 @@ export async function POST(request: Request) {
     const announcement = await prisma.announcement.create({
       data: {
         title: String(body.title ?? ""),
-        message: String(body.message ?? ""),
+        message: sanitizeHtml(String(body.message ?? "")),
         type: (body.type as never) ?? "INFO",
         isUrgent: Boolean(body.isUrgent),
         postedBy: user.id,
@@ -37,18 +43,27 @@ export async function POST(request: Request) {
 
     await Promise.all(
       recipients.map((recipient) =>
-        createNotification(
+        sendNotification(
           recipient.id,
-          "ANNOUNCEMENT",
-          announcement.title,
-          announcement.message,
-          "/community",
+          "NEW_ANNOUNCEMENT",
+          {
+            title: announcement.title,
+            message: announcement.message,
+            link: "/community",
+          },
         ),
       ),
     );
+    await logAdminAction({
+      userId: user.id,
+      action: "ANNOUNCEMENT_POSTED",
+      entity: "Announcement",
+      entityId: announcement.id,
+    });
 
     return Response.json(announcement);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to save announcement.", 500);
   }
 }

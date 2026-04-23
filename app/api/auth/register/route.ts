@@ -1,74 +1,31 @@
-import bcrypt from "bcryptjs";
-import { SubscriptionStatus } from "@prisma/client";
-import { z } from "zod";
-import { sendWelcomeEmail } from "@/lib/email";
-import { prisma } from "@/lib/prisma";
-import { apiError, safeJson } from "@/lib/utils";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { registerSchema } from "@/lib/validators";
+import { AppError } from "@/server/core/app-error";
+import { created } from "@/server/core/http";
+import { createRouteHandler } from "@/server/core/route";
+import { parseJsonBody } from "@/server/core/validation";
+import { authService } from "@/server/services/auth-service";
 
-const registerSchema = z
-  .object({
-    name: z.string().min(2, "Full name is required."),
-    email: z.string().email("Enter a valid email."),
-    password: z.string().min(8, "Password must be at least 8 characters."),
-    confirmPassword: z.string().min(8),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords do not match.",
-    path: ["confirmPassword"],
+export const dynamic = "force-dynamic";
+
+export const POST = createRouteHandler(async ({ request }) => {
+  const identifier = request.headers.get("x-forwarded-for") ?? "unknown-ip";
+  const rate = await checkRateLimit("register", identifier);
+
+  if (!rate.success) {
+    throw AppError.tooManyRequests(
+      "Too many registration attempts. Please try again later.",
+      Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000)),
+    );
+  }
+
+  const payload = await parseJsonBody(request, registerSchema);
+  const result = await authService.register({
+    name: payload.name,
+    email: payload.email,
+    password: payload.password,
+    referralCode: payload.referralCode,
   });
 
-export async function POST(request: Request) {
-  try {
-    const body = await safeJson<z.infer<typeof registerSchema>>(request);
-    const parsed = registerSchema.safeParse(body);
-
-    if (!parsed.success) {
-      return Response.json(
-        {
-          message: "Validation failed.",
-          errors: parsed.error.flatten().fieldErrors,
-        },
-        { status: 422 },
-      );
-    }
-
-    const email = parsed.data.email.toLowerCase();
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) {
-      return apiError("An account with this email already exists.", 409);
-    }
-
-    const password = await bcrypt.hash(parsed.data.password, 10);
-    const user = await prisma.user.create({
-      data: {
-        name: parsed.data.name,
-        email,
-        password,
-        subscriptionStatus: SubscriptionStatus.TRIAL,
-      },
-    });
-
-    await sendWelcomeEmail(user.email, user.name);
-
-    return Response.json({
-      ok: true,
-      user: {
-        id: user.id,
-        email: user.email,
-      },
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "";
-    if (
-      message.includes("Can't reach database server") ||
-      message.includes("ECONNREFUSED") ||
-      message.includes("P1001")
-    ) {
-      return apiError(
-        "Database connection failed. Check DATABASE_URL and try again.",
-        500,
-      );
-    }
-    return apiError("Registration failed. Please try again later.", 500);
-  }
-}
+  return created(result);
+});

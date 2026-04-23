@@ -1,12 +1,16 @@
 import { redirect } from "next/navigation";
+import { LivePriceTicker } from "@/components/dashboard/LivePriceTicker";
 import { MobileBottomNav } from "@/components/layout/MobileBottomNav";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { SubscriptionBanner } from "@/components/layout/SubscriptionBanner";
 import { Topbar } from "@/components/layout/Topbar";
 import type { GlobalSearchItem } from "@/components/layout/GlobalSearch";
 import { adminNav, primaryNav } from "@/components/layout/navigation";
+import { PushPermissionPrompt } from "@/components/notifications/PushPermissionPrompt";
+import { AddToHomeScreenPrompt } from "@/components/pwa/AddToHomeScreenPrompt";
 import { auth } from "@/lib/auth";
+import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { getSiteConfig } from "@/lib/site-config";
 
 export default async function DashboardLayout({
   children,
@@ -25,6 +29,19 @@ export default async function DashboardLayout({
       isRead: false,
     },
   });
+  const siteConfig = await getSiteConfig();
+  if (siteConfig.maintenanceMode && session.user.role !== "ADMIN") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-6">
+        <div className="max-w-xl rounded-2xl border border-border bg-card p-8 text-center">
+          <h1 className="text-2xl font-semibold">{siteConfig.platformName} is under maintenance</h1>
+          <p className="mt-3 text-sm text-muted-foreground">
+            {siteConfig.maintenanceMessage || "We are applying updates and will be back shortly."}
+          </p>
+        </div>
+      </div>
+    );
+  }
   const [recentSignals, recentResources, recentTrades, recentAnnouncements] =
     await Promise.all([
       prisma.signal.findMany({
@@ -90,10 +107,14 @@ export default async function DashboardLayout({
       <Sidebar user={session.user} />
       <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden">
         <Topbar user={session.user} unreadCount={unreadCount} searchItems={searchItems} />
-        <SubscriptionBanner user={session.user} />
+        {session.user.role !== "ADMIN" ? (
+          <PushPermissionPrompt appId={env.onesignalAppId} userId={session.user.id} />
+        ) : null}
+        <LivePriceTicker symbols={siteConfig.tickerSymbols} />
         <main className="flex-1 overflow-y-auto px-4 pt-6 pb-20 sm:px-6 md:pb-6 lg:px-8">
           {children}
         </main>
+        <AddToHomeScreenPrompt />
         <MobileBottomNav />
       </div>
     </div>

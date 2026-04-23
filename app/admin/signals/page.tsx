@@ -1,13 +1,14 @@
 "use client";
 
-import type { Signal, SignalStatus } from "@prisma/client";
-import { Copy, Pencil, Trash2 } from "lucide-react";
+import type { Signal } from "@prisma/client";
+import { Copy, Pencil, Target, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { PostSignalForm } from "@/components/signals/PostSignalForm";
+import { UpdateSignalOutcomeForm } from "@/components/signals/UpdateSignalOutcomeForm";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
@@ -28,19 +29,12 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useSignalMutations, useSignals } from "@/hooks/useSignals";
 import { fetchJson } from "@/lib/client-api";
-
-const statusOptions: SignalStatus[] = [
-  "ACTIVE",
-  "PENDING",
-  "WIN",
-  "LOSS",
-  "CANCELLED",
-  "BREAKEVEN",
-];
+import { getSignalStatusVariant } from "@/lib/signal-performance";
 
 export default function AdminSignalsPage() {
   const queryClient = useQueryClient();
   const [editingSignal, setEditingSignal] = useState<Signal | null>(null);
+  const [outcomeSignal, setOutcomeSignal] = useState<Signal | null>(null);
   const [deletingSignalId, setDeletingSignalId] = useState<string | null>(null);
   const { data, isLoading, isError, refetch } = useSignals("ALL");
   const { createSignal, updateSignal, deleteSignal } = useSignalMutations();
@@ -61,7 +55,7 @@ export default function AdminSignalsPage() {
           timeframe: signal.timeframe,
           rrRatio: signal.rrRatio,
           reasoning: signal.reasoning,
-          status: "PENDING",
+          status: "ACTIVE",
           isVipOnly: signal.isVipOnly,
         }),
       }),
@@ -130,8 +124,6 @@ export default function AdminSignalsPage() {
               </TableHeader>
               <TableBody>
                 {data.signals.map((signal) => {
-                  const isRowUpdating =
-                    updateSignal.isPending && updateSignal.variables?.id === signal.id;
                   const isDuplicating =
                     duplicateMutation.isPending &&
                     duplicateMutation.variables?.id === signal.id;
@@ -147,28 +139,9 @@ export default function AdminSignalsPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="space-y-1">
-                          <select
-                            className="h-9 rounded-xl border border-border bg-background px-3 text-sm"
-                            value={signal.status}
-                            disabled={isRowUpdating}
-                            onChange={(event) =>
-                              updateSignal.mutate({
-                                id: signal.id,
-                                payload: { status: event.target.value as SignalStatus },
-                              })
-                            }
-                          >
-                            {statusOptions.map((status) => (
-                              <option key={status} value={status}>
-                                {status}
-                              </option>
-                            ))}
-                          </select>
-                          {isRowUpdating ? (
-                            <p className="text-xs text-muted-foreground">Updating...</p>
-                          ) : null}
-                        </div>
+                        <Badge variant={getSignalStatusVariant(signal.status)}>
+                          {signal.status}
+                        </Badge>
                       </TableCell>
                       <TableCell>{signal.timeframe}</TableCell>
                       <TableCell>
@@ -185,6 +158,15 @@ export default function AdminSignalsPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setOutcomeSignal(signal)}
+                          >
+                            <Target className="mr-2 h-4 w-4" />
+                            Update Outcome
+                          </Button>
                           <Button
                             type="button"
                             variant="outline"
@@ -265,6 +247,41 @@ export default function AdminSignalsPage() {
                 isSubmitting={
                   updateSignal.isPending && updateSignal.variables?.id === editingSignal.id
                 }
+              />
+            </div>
+          ) : null}
+        </SheetContent>
+      </Sheet>
+
+      <Sheet
+        open={Boolean(outcomeSignal)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOutcomeSignal(null);
+          }
+        }}
+      >
+        <SheetContent side="right" className="w-full max-w-xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Update outcome</SheetTitle>
+            <SheetDescription>
+              Mark target progression, stop loss, and the final result for track-record accuracy.
+            </SheetDescription>
+          </SheetHeader>
+          {outcomeSignal ? (
+            <div className="mt-6">
+              <UpdateSignalOutcomeForm
+                signal={outcomeSignal}
+                isSubmitting={
+                  updateSignal.isPending && updateSignal.variables?.id === outcomeSignal.id
+                }
+                onSubmit={async (values) => {
+                  await updateSignal.mutateAsync({
+                    id: outcomeSignal.id,
+                    payload: values,
+                  });
+                  setOutcomeSignal(null);
+                }}
               />
             </div>
           ) : null}

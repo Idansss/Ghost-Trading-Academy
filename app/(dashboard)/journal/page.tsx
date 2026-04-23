@@ -3,6 +3,7 @@
 import type { Trade } from "@prisma/client";
 import { BookOpenText, DownloadCloud, Plus } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { useSearchParams as useNextSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -125,6 +126,12 @@ export default function JournalPage() {
         description="Track setups, performance, and context with real monthly analytics."
         action={
           <div className="flex gap-3">
+            <Button asChild variant="outline">
+              <Link href="/journal/import">Import CSV</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/journal/weekly-review">Weekly Review</Link>
+            </Button>
             <Button variant="outline" onClick={handleExport}>
               <DownloadCloud className="mr-2 h-4 w-4" />
               Export
@@ -156,6 +163,26 @@ export default function JournalPage() {
         />
       ) : (
         <>
+          {!data.summary.loggedToday && data.summary.journalStreak > 2 ? (
+            <div className="rounded-3xl border border-primary/20 bg-primary/10 p-5">
+              <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-primary">Protect your streak</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    You&apos;re on a {data.summary.journalStreak}-day journal streak. Log one trade today to keep the run alive.
+                  </p>
+                </div>
+                <Button
+                  onClick={() => {
+                    setIsAddOpen(true);
+                  }}
+                >
+                  Log today&apos;s trade
+                </Button>
+              </div>
+            </div>
+          ) : null}
+
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
             {kpiCards.map((card, index) => (
               <motion.div

@@ -27,12 +27,13 @@ export function CalculatorForm({
             type="number"
             step="any"
             value={value[field.key as keyof CalculatorInput]}
-            onChange={(event) =>
+            onChange={(event) => {
+              const nextValue = event.target.value;
               onChange({
                 ...value,
-                [field.key]: Number(event.target.value),
-              })
-            }
+                [field.key]: nextValue === "" ? "" : Number(nextValue),
+              });
+            }}
           />
         </div>
       ))}

@@ -50,6 +50,42 @@ const notificationTypeMap: Record<
     icon: Megaphone,
     iconClassName: "text-[color:var(--color-gold)]",
   },
+  SIGNAL_UPDATE: {
+    icon: Bolt,
+    iconClassName: "text-[color:var(--color-gold)]",
+  },
+  NEW_ANNOUNCEMENT: {
+    icon: Megaphone,
+    iconClassName: "text-[color:var(--color-gold)]",
+  },
+  NEW_RECAP: {
+    icon: BarChart3,
+    iconClassName: "text-[color:var(--color-blue)]",
+  },
+  WIN_APPROVED: {
+    icon: CheckCircle2,
+    iconClassName: "text-[color:var(--color-green)]",
+  },
+  STREAK_REMINDER: {
+    icon: BellRing,
+    iconClassName: "text-[color:var(--color-gold)]",
+  },
+  WEEKLY_REVIEW_READY: {
+    icon: FileText,
+    iconClassName: "text-[color:var(--color-blue)]",
+  },
+  LEADERBOARD_UPDATE: {
+    icon: BarChart3,
+    iconClassName: "text-[color:var(--color-blue)]",
+  },
+  BROADCAST: {
+    icon: Megaphone,
+    iconClassName: "text-[color:var(--color-gold)]",
+  },
+  DIRECT_MESSAGE: {
+    icon: BellRing,
+    iconClassName: "text-[color:var(--color-gold)]",
+  },
   SYSTEM: {
     icon: Cog,
     iconClassName: "text-muted-foreground",

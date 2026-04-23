@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AvoidList } from "@/components/outlook/AvoidList";
 import { CoinWatchItem } from "@/components/outlook/CoinWatchItem";
+import { OutlookChartCard } from "@/components/outlook/OutlookChartCard";
 
 export function OutlookCard({
   outlook,
@@ -110,6 +111,39 @@ export function OutlookCard({
           <AvoidList items={outlook.avoidToday} />
         </CardContent>
       </Card>
+
+      {outlook.coinsToWatch.length ? (
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold">Chart Context</h3>
+            <p className="text-sm text-muted-foreground">
+              Review each watchlist coin with its mapped support and resistance levels directly on the chart.
+            </p>
+          </div>
+          <div className="grid gap-6">
+            {outlook.coinsToWatch.map((coin) => {
+              // AUDIT FIX: The Prisma Json field is typed as JsonValue (a union that
+              // includes scalar types). Cast the find result to the known shape so
+              // downstream property access compiles correctly.
+              type LevelEntry = { coin: string; resistance: string; support: string };
+              const matchedLevels = outlook.levels.find(
+                (level) =>
+                  (level as LevelEntry | null)?.coin?.toUpperCase() === coin.coin.toUpperCase(),
+              ) as LevelEntry | undefined;
+
+              return (
+                <OutlookChartCard
+                  key={coin.coin}
+                  coin={coin.coin}
+                  note={coin.note}
+                  resistance={matchedLevels?.resistance}
+                  support={matchedLevels?.support}
+                />
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

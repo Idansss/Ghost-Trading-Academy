@@ -1,0 +1,2 @@
+ALTER TABLE "User"
+  ADD COLUMN "leaderboardOptIn" BOOLEAN NOT NULL DEFAULT false;

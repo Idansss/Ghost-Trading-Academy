@@ -146,11 +146,13 @@ export function PostSignalForm({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {["ACTIVE", "PENDING", "WIN", "LOSS", "CANCELLED", "BREAKEVEN"].map((item) => (
-              <SelectItem key={item} value={item}>
-                {item}
-              </SelectItem>
-            ))}
+            <SelectItem value="ACTIVE">ACTIVE</SelectItem>
+            <SelectItem value="TP1_HIT">TP1_HIT</SelectItem>
+            <SelectItem value="TP2_HIT">TP2_HIT</SelectItem>
+            <SelectItem value="TP3_HIT">TP3_HIT</SelectItem>
+            <SelectItem value="STOPPED">STOPPED</SelectItem>
+            <SelectItem value="CANCELLED">CANCELLED</SelectItem>
+            <SelectItem value="CLOSED">CLOSED</SelectItem>
           </SelectContent>
         </Select>
       </div>

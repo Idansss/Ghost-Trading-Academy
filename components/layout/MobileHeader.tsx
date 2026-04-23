@@ -99,14 +99,11 @@ export function MobileHeader({
                   </p>
                 </div>
               </div>
-              <div className="mt-3 flex items-center justify-between">
+              <div className="mt-3">
                 <Badge variant={user.role === "MEMBER" ? "muted" : "default"}>
                   <span className="status-dot bg-current" />
                   {user.role}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {user.subscriptionStatus}
-                </span>
               </div>
             </div>
           </div>

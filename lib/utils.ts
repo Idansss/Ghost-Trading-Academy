@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from "clsx";
 import type { Trade } from "@prisma/client";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { twMerge } from "tailwind-merge";
+import logger from "@/server/core/logger";
 
 /**
  * Merges conditional Tailwind class names.
@@ -56,10 +57,27 @@ export async function safeJson<T>(request: Request): Promise<T> {
 }
 
 /**
- * Produces a stable API error payload.
+ * Produces a standard API error response envelope.
+ * AUDIT FIX: Changed response shape from { error: string } to the required envelope
+ * { success: false, error: { code, message } } so all error responses are consistent
+ * with AppError-originated responses from createRouteHandler routes.
  */
-export function apiError(message: string, status = 400) {
-  return Response.json({ message }, { status });
+export function apiError(message: string, status = 400, code = "BAD_REQUEST") {
+  return Response.json({ success: false, error: { code, message } }, { status });
+}
+
+/**
+ * Maps thrown errors to the correct HTTP response.
+ * AUDIT FIX: Replaced console.error with pino logger and removed string-based
+ * error message matching now that requireUser/requireAdmin throw AppError instances.
+ */
+export function handleApiError(error: unknown, fallbackMessage = "Internal server error."): Response {
+  if (error instanceof Error && "statusCode" in error && "code" in error) {
+    const appErr = error as { statusCode: number; code: string; message: string };
+    return apiError(appErr.message, appErr.statusCode, appErr.code);
+  }
+  logger.error({ type: "unhandled_api_error", err: error });
+  return apiError(fallbackMessage, 500, "INTERNAL_ERROR");
 }
 
 export function exportTradesToCSV(trades: Trade[], filename: string): void {

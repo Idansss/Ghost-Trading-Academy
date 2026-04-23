@@ -1,4 +1,4 @@
-import type { Role, SubscriptionStatus } from "@prisma/client";
+import type { Role } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
@@ -6,6 +6,9 @@ import { z } from "zod";
 import authConfig from "@/auth.config";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
+import { verifyShortLivedJwt } from "@/lib/jwt";
+import { decryptSecret, matchBackupCode, verifyTOTPPlain } from "@/lib/two-factor";
+import { AppError } from "@/server/core/app-error";
 
 void env.nextAuthSecret;
 void env.nextAuthUrl;
@@ -13,12 +16,17 @@ void env.nextAuthUrl;
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
+  otpCode: z.string().optional(),
+  loginToken: z.string().optional(),
 });
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   session: {
     strategy: "jwt",
+    // AUDIT FIX: Set a sensible session expiry. 7 days matches typical "remember me"
+    // behaviour. Without this the default is 30 days which is too permissive.
+    maxAge: 60 * 60 * 24 * 7,
   },
   providers: [
     Credentials({
@@ -30,6 +38,34 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const parsed = credentialsSchema.safeParse(rawCredentials);
         if (!parsed.success) {
           return null;
+        }
+
+        if (parsed.data.loginToken) {
+          let tokenPayload: { type?: string; userId?: string };
+          try {
+            tokenPayload = await verifyShortLivedJwt<{ type?: string; userId?: string }>(
+              parsed.data.loginToken,
+            );
+          } catch {
+            return null;
+          }
+          if (tokenPayload.type !== "2fa-login" || !tokenPayload.userId) {
+            return null;
+          }
+          const userFromToken = await prisma.user.findUnique({
+            where: { id: tokenPayload.userId },
+          });
+          if (!userFromToken) return null;
+          return {
+            id: userFromToken.id,
+            email: userFromToken.email,
+            name: userFromToken.name,
+            role: userFromToken.role,
+            avatarUrl: userFromToken.avatarUrl,
+            accountBalance: userFromToken.accountBalance,
+            accountSize: userFromToken.accountSize,
+            riskPerTrade: userFromToken.riskPerTrade,
+          };
         }
 
         const user = await prisma.user.findUnique({
@@ -48,6 +84,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null;
         }
 
+        if (user.twoFactorEnabled) {
+          if (!parsed.data.otpCode || !user.twoFactorSecret) {
+            return null;
+          }
+          const secret = decryptSecret(user.twoFactorSecret);
+          const isValidTotp = verifyTOTPPlain(parsed.data.otpCode, secret);
+          if (!isValidTotp) {
+            const backupCodes = await prisma.twoFactorBackupCode.findMany({
+              where: { userId: user.id, usedAt: null },
+            });
+            let matchedBackupId: string | null = null;
+            for (const backup of backupCodes) {
+              if (await matchBackupCode(parsed.data.otpCode, backup.codeHash)) {
+                matchedBackupId = backup.id;
+                break;
+              }
+            }
+            if (!matchedBackupId) return null;
+            await prisma.twoFactorBackupCode.update({
+              where: { id: matchedBackupId },
+              data: { usedAt: new Date() },
+            });
+          }
+        }
+
         return {
           id: user.id,
           email: user.email,
@@ -55,8 +116,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           role: user.role,
           avatarUrl: user.avatarUrl,
           accountBalance: user.accountBalance,
-          subscriptionStatus: user.subscriptionStatus,
-          subscriptionExpiry: user.subscriptionExpiry,
+          accountSize: user.accountSize,
+          riskPerTrade: user.riskPerTrade,
         };
       },
     }),
@@ -67,16 +128,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = user.role as Role;
-        token.subscriptionStatus = user.subscriptionStatus;
-        token.subscriptionExpiry = user.subscriptionExpiry
-          ? new Date(user.subscriptionExpiry).toISOString()
-          : null;
         token.accountBalance = user.accountBalance;
         token.avatarUrl = user.avatarUrl;
+        token.accountSize = user.accountSize;
+        token.riskPerTrade = user.riskPerTrade;
       }
 
       if (trigger === "update" && session.user) {
-        token.name = session.user.name;
+        if (session.user.name !== undefined) {
+          token.name = session.user.name;
+        }
+        if (session.user.avatarUrl !== undefined) {
+          token.avatarUrl = session.user.avatarUrl;
+        }
+        if (session.user.accountSize !== undefined) {
+          token.accountSize = session.user.accountSize;
+        }
+        if (session.user.riskPerTrade !== undefined) {
+          token.riskPerTrade = session.user.riskPerTrade;
+        }
       }
 
       return token;
@@ -85,15 +155,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = String(token.id);
         session.user.role = token.role as Role;
-        session.user.subscriptionStatus =
-          token.subscriptionStatus as SubscriptionStatus;
-        session.user.subscriptionExpiry =
-          token.subscriptionExpiry === null
-            ? null
-            : new Date(String(token.subscriptionExpiry));
         session.user.accountBalance = Number(token.accountBalance ?? 0);
         session.user.avatarUrl =
           token.avatarUrl === null ? null : String(token.avatarUrl ?? "");
+        session.user.accountSize =
+          token.accountSize === null || token.accountSize === undefined
+            ? null
+            : Number(token.accountSize);
+        session.user.riskPerTrade = Number(token.riskPerTrade ?? 1);
       }
       return session;
     },
@@ -106,7 +175,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 export async function requireUser() {
   const session = await auth();
   if (!session?.user) {
-    throw new Error("Unauthorized");
+    // AUDIT FIX: Replaced generic Error with AppError.unauthorized() so the
+    // createRouteHandler error boundary correctly maps it to a 401 response
+    // instead of falling through to the generic 500 INTERNAL_ERROR branch.
+    throw AppError.unauthorized();
   }
 
   return session.user;
@@ -118,7 +190,9 @@ export async function requireUser() {
 export async function requireAdmin() {
   const user = await requireUser();
   if (user.role !== "ADMIN") {
-    throw new Error("Forbidden");
+    // AUDIT FIX: Replaced generic Error with AppError.forbidden() for the same
+    // reason — the error handler can now return a proper 403 response.
+    throw AppError.forbidden();
   }
   return user;
 }

@@ -61,14 +61,16 @@ export function TradeFilters({
         value={value.setup}
         onChange={(event) => onChange({ ...value, setup: event.target.value })}
       />
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Input
           type="date"
+          aria-label="From date"
           value={value.from}
           onChange={(event) => onChange({ ...value, from: event.target.value })}
         />
         <Input
           type="date"
+          aria-label="To date"
           value={value.to}
           onChange={(event) => onChange({ ...value, to: event.target.value })}
         />

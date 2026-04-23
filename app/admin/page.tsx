@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { formatDistanceToNowStrict } from "date-fns";
 import {
@@ -11,6 +12,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { MetricCard } from "@/components/shared/MetricCard";
@@ -18,6 +20,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchJson } from "@/lib/client-api";
+import { getSignalStatusVariant } from "@/lib/signal-performance";
 
 type ActivityItem = {
   type: "member" | "signal" | "win";
@@ -36,7 +39,7 @@ type SignalThisWeek = {
 
 type AdminOverviewData = {
   totalMembers: number;
-  totalVipMembers: number;
+  totalVipUsers: number;
   totalSignalsThisMonth: number;
   totalTradesLogged: number;
   activityFeed: ActivityItem[];
@@ -79,11 +82,16 @@ export default function AdminOverviewPage() {
           eyebrow="Admin"
           title="Admin Overview"
           description="Manage members, publish desk content, and monitor platform activity."
+          action={
+            <Button asChild>
+              <Link href="/admin/site-config">Edit Site Config</Link>
+            </Button>
+          }
         />
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <MetricCard label="Total Members" value={`${data.totalMembers}`} />
-          <MetricCard label="VIP Members" value={`${data.totalVipMembers}`} />
+          <MetricCard label="VIP Users" value={`${data.totalVipUsers}`} />
           <MetricCard label="Signals This Month" value={`${data.totalSignalsThisMonth}`} />
           <MetricCard label="Trades Logged" value={`${data.totalTradesLogged}`} />
         </div>
@@ -144,15 +152,7 @@ export default function AdminOverviewPage() {
                       <p className="text-xs text-muted-foreground">{signal.rrRatio.toFixed(2)}R</p>
                     </div>
                     <Badge
-                      variant={
-                        signal.status === "WIN"
-                          ? "success"
-                          : signal.status === "LOSS"
-                          ? "danger"
-                          : signal.status === "ACTIVE"
-                          ? "info"
-                          : "muted"
-                      }
+                      variant={getSignalStatusVariant(signal.status as never)}
                     >
                       {signal.status}
                     </Badge>

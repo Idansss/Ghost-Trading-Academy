@@ -3,10 +3,12 @@
 import type { Trade } from "@prisma/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon, Trash2 } from "lucide-react";
+import { CalendarIcon, ImageIcon, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { z } from "zod";
 import {
@@ -14,9 +16,11 @@ import {
   saveTradeNotesAction,
   updateTradeAction,
 } from "@/lib/actions/trades";
+import { TradeChartUploadField } from "@/components/journal/TradeChartUploadField";
 import { calculateRR } from "@/lib/calculations";
 import { tradeSchema } from "@/lib/validators";
 import { RichNotesEditor } from "@/components/journal/RichNotesEditor";
+import { TagMultiSelect, type TagOption } from "@/components/tags/TagMultiSelect";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +34,14 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -42,6 +54,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { fetchJson } from "@/lib/client-api";
 import { cn } from "@/lib/utils";
 
 type TradeValues = z.input<typeof tradeSchema>;
@@ -58,7 +71,9 @@ function toTradeValues(trade: Trade): TradeValues {
     pnlPercent: trade.pnlPercent,
     outcome: trade.outcome,
     setupType: trade.setupType,
+    tags: trade.tags ?? [],
     notes: trade.notes ?? "",
+    chartImageUrl: trade.chartImageUrl ?? "",
     tradeDate: new Date(trade.tradeDate).toISOString().slice(0, 10),
   };
 }
@@ -82,6 +97,11 @@ export function TradeDetailDrawer({
   const form = useForm<TradeValues>({
     resolver: zodResolver(tradeSchema),
     defaultValues: trade ? toTradeValues(trade) : undefined,
+  });
+
+  const { data: tagData } = useQuery({
+    queryKey: ["trade-tags"],
+    queryFn: () => fetchJson<{ tags: TagOption[] }>("/api/trade-tags"),
   });
 
   useEffect(() => {
@@ -284,6 +304,22 @@ export function TradeDetailDrawer({
                 <Input id="trade-setup-type" {...form.register("setupType")} />
               </div>
 
+              <div className="space-y-2 md:col-span-2">
+                <Label>Tags</Label>
+                <TagMultiSelect
+                  value={form.watch("tags") ?? []}
+                  options={tagData?.tags ?? []}
+                  onChange={(value) =>
+                    form.setValue("tags", value, {
+                      shouldDirty: true,
+                      shouldTouch: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  placeholder="Choose all tags that describe this trade"
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label>Trade Date</Label>
                 <Popover>
@@ -343,6 +379,52 @@ export function TradeDetailDrawer({
                   </div>
                 ))}
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Chart Image</Label>
+              <TradeChartUploadField
+                imageUrl={form.watch("chartImageUrl") || null}
+                onUpload={(url) =>
+                  form.setValue("chartImageUrl", url, {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  })
+                }
+                onRemove={() =>
+                  form.setValue("chartImageUrl", "", {
+                    shouldDirty: true,
+                    shouldTouch: true,
+                    shouldValidate: true,
+                  })
+                }
+              />
+              {form.watch("chartImageUrl") ? (
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" className="w-full gap-2">
+                      <ImageIcon className="h-4 w-4" />
+                      View full chart
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-5xl p-3">
+                    <DialogHeader className="sr-only">
+                      <DialogTitle>Trade chart image</DialogTitle>
+                      <DialogDescription>Expanded chart screenshot for this trade.</DialogDescription>
+                    </DialogHeader>
+                    <div className="relative h-[82vh] w-full">
+                      <Image
+                        src={form.watch("chartImageUrl") || ""}
+                        alt={`${trade.coin} chart attachment`}
+                        fill
+                        className="rounded-2xl object-contain"
+                        sizes="100vw"
+                      />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              ) : null}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:justify-between">

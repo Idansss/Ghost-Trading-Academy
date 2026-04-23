@@ -1,50 +1,24 @@
-import { requireUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { apiError } from "@/lib/utils";
+import { signalIdParamsSchema } from "@/lib/validators";
+import { requireAuthenticatedUser } from "@/server/core/auth";
+import { success } from "@/server/core/http";
+import { createRouteHandler } from "@/server/core/route";
+import { validateInput } from "@/server/core/validation";
+import { signalService } from "@/server/services/signal-service";
 
-export async function POST(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const user = await requireUser();
-    const { id: signalId } = await params;
+export const dynamic = "force-dynamic";
 
-    const existing = await prisma.signalTaken.findUnique({
-      where: { userId_signalId: { userId: user.id, signalId } },
-    });
+export const POST = createRouteHandler(async ({ params }) => {
+  const user = await requireAuthenticatedUser();
+  const { id } = validateInput(signalIdParamsSchema, params);
+  const data = await signalService.toggleTakenState(user.id, id);
 
-    if (existing) {
-      await prisma.signalTaken.delete({
-        where: { userId_signalId: { userId: user.id, signalId } },
-      });
-      return Response.json({ taken: false });
-    }
+  return success(data);
+});
 
-    await prisma.signalTaken.create({
-      data: { userId: user.id, signalId },
-    });
+export const GET = createRouteHandler(async ({ params }) => {
+  const user = await requireAuthenticatedUser();
+  const { id } = validateInput(signalIdParamsSchema, params);
+  const data = await signalService.getTakenState(user.id, id);
 
-    return Response.json({ taken: true });
-  } catch {
-    return apiError("Unable to update signal taken status.", 500);
-  }
-}
-
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    const user = await requireUser();
-    const { id: signalId } = await params;
-
-    const existing = await prisma.signalTaken.findUnique({
-      where: { userId_signalId: { userId: user.id, signalId } },
-    });
-
-    return Response.json({ taken: Boolean(existing) });
-  } catch {
-    return apiError("Unable to check signal taken status.", 500);
-  }
-}
+  return success(data);
+});

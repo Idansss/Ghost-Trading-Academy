@@ -3,6 +3,10 @@ import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError, getMonthKey, safeJson } from "@/lib/utils";
 import { tradeSchema } from "@/lib/validators";
+import { assertTrustedImageUrl } from "@/lib/sanitize";
+
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
 
 export async function PATCH(
   request: Request,
@@ -20,14 +24,17 @@ export async function PATCH(
 
     const body = await safeJson<unknown>(request);
     const parsed = tradeSchema.safeParse(body);
+    // AUDIT FIX: Validation error shape changed from { message, errors } to
+    // { error, details } for consistency with the global error format.
     if (!parsed.success) {
       return Response.json(
-        { message: "Invalid trade payload.", errors: parsed.error.flatten().fieldErrors },
+        { error: "Validation failed.", details: parsed.error.flatten() },
         { status: 422 },
       );
     }
 
     const tradeDate = new Date(parsed.data.tradeDate);
+    assertTrustedImageUrl(parsed.data.chartImageUrl || null);
 
     const trade = await prisma.trade.update({
       where: { id: params.id },
@@ -51,7 +58,20 @@ export async function PATCH(
         pnlPercent: parsed.data.pnlPercent,
         outcome: parsed.data.outcome,
         setupType: parsed.data.setupType,
+        tags: parsed.data.tags,
         notes: parsed.data.notes ?? null,
+        chartImageUrl: parsed.data.chartImageUrl || null,
+        emotionBefore: parsed.data.emotionBefore ?? null,
+        emotionDuring: parsed.data.emotionDuring ?? null,
+        emotionAfter: parsed.data.emotionAfter ?? null,
+        followedPlan: parsed.data.followedPlan ?? null,
+        revenge: parsed.data.revenge ?? false,
+        overSized: parsed.data.overSized ?? false,
+        movedStop: parsed.data.movedStop ?? false,
+        exitedEarly: parsed.data.exitedEarly ?? false,
+        tradeRating: parsed.data.tradeRating ?? null,
+        mistakeNote: parsed.data.mistakeNote ?? null,
+        lessonLearned: parsed.data.lessonLearned ?? null,
         tradeDate,
         month: getMonthKey(tradeDate),
         closedAt:
@@ -60,7 +80,8 @@ export async function PATCH(
     });
 
     return Response.json(trade);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to update trade.", 500);
   }
 }
@@ -81,7 +102,8 @@ export async function DELETE(
 
     await prisma.trade.delete({ where: { id: params.id } });
     return Response.json({ ok: true });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to delete trade.", 500);
   }
 }

@@ -1,8 +1,13 @@
 import { requireAdmin, requireUser } from "@/lib/auth";
-import { createNotification } from "@/lib/actions/notifications";
+import { sendNotification } from "@/lib/notify";
 import { prisma } from "@/lib/prisma";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { apiError, safeJson } from "@/lib/utils";
 import { weeklyRecapSchema } from "@/lib/validators";
+import { logAdminAction } from "@/lib/audit-log";
+
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
@@ -11,7 +16,8 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
     return Response.json({ recaps });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to load weekly recaps.", 500);
   }
 }
@@ -23,7 +29,7 @@ export async function POST(request: Request) {
     const parsed = weeklyRecapSchema.safeParse(body);
     if (!parsed.success) {
       return Response.json(
-        { message: "Invalid recap payload.", errors: parsed.error.flatten().fieldErrors },
+        { error: "Validation failed.", details: parsed.error.flatten() },
         { status: 422 },
       );
     }
@@ -43,12 +49,14 @@ export async function POST(request: Request) {
 
     await Promise.all(
       recipients.map((recipient) =>
-        createNotification(
+        sendNotification(
           recipient.id,
-          "WEEKLY_RECAP",
-          "Weekly recap posted",
-          `Week of ${new Date(recap.weekStartDate).toLocaleDateString()}: ${recap.totalTrades} trades, ${recap.winRate}% win rate`,
-          "/community",
+          "NEW_RECAP",
+          {
+            title: "Weekly recap posted",
+            message: `Week of ${new Date(recap.weekStartDate).toLocaleDateString()}: ${recap.totalTrades} trades, ${recap.winRate}% win rate`,
+            link: "/community",
+          },
         ),
       ),
     );
@@ -56,14 +64,21 @@ export async function POST(request: Request) {
     await prisma.announcement.create({
       data: {
         title: "Weekly recap posted",
-        message: recap.nextWeekFocus,
+        message: sanitizeHtml(recap.nextWeekFocus),
         type: "INFO",
         postedBy: user.id,
       },
     });
+    await logAdminAction({
+      userId: user.id,
+      action: "RECAP_PUBLISHED",
+      entity: "WeeklyRecap",
+      entityId: recap.id,
+    });
 
     return Response.json(recap);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to save weekly recap.", 500);
   }
 }

@@ -37,18 +37,70 @@ Change these passwords immediately after first login.
 - Sonner (toast notifications)
 - Zustand (global state)
 
+## Backend Architecture
+
+The API layer now follows a service-oriented backend split inside the existing
+Next.js App Router project:
+
+- `app/api/*` route handlers act as thin controllers
+- `server/core/*` contains request wrappers, response envelopes, validation, auth guards, and logging
+- `server/services/*` contains business logic
+- `server/repositories/*` contains Prisma data access
+
+Refactored routes currently using this pattern:
+
+- `POST /api/auth/register`
+- `GET /api/signals`
+- `POST /api/signals`
+- `PATCH /api/signals/:id`
+- `DELETE /api/signals/:id`
+- `GET /api/signals/:id/take`
+- `POST /api/signals/:id/take`
+
+Response format for the refactored endpoints:
+
+```json
+{
+  "success": true,
+  "data": {}
+}
+```
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed."
+  }
+}
+```
+
 ## Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
 | DATABASE_URL | Yes | PostgreSQL connection string |
 | NEXTAUTH_SECRET | Yes | Random secret for NextAuth |
-| NEXTAUTH_URL | Yes | Base URL of your app |
+| NEXTAUTH_URL | Yes | Base URL of your app. On Vercel this must be your production domain, not `http://localhost:3000` |
 | UPLOADTHING_SECRET | No | Uploadthing API secret |
 | UPLOADTHING_APP_ID | No | Uploadthing app ID |
 | RESEND_API_KEY | No | Resend API key for emails |
 | RESEND_FROM_EMAIL | No | From address for emails |
 | NEXT_PUBLIC_CONTACT_LINK | No | WhatsApp or Telegram link for VIP upgrade |
+
+## Health Checks
+
+- `GET /health` - liveness
+- `GET /health/ready` - readiness (database + Redis connectivity)
+- `GET /api/health/db` - database-only diagnostic endpoint
+
+## Quality Checks
+
+- `npm run lint`
+- `npm test`
+- `npm run test:coverage`
+- `npx tsc --noEmit`
 
 ## Deployment
 

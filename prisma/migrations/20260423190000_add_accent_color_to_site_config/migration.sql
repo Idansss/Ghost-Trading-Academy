@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "SiteConfig" ADD COLUMN IF NOT EXISTS "accentColor" TEXT NOT NULL DEFAULT '#D4A017';

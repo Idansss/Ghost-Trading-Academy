@@ -30,7 +30,7 @@ export function DecisionSupportCards({
 }: {
   latestOutlook: { marketBias: MarketBias; biasExplanation: string } | null;
   activeSignals: number;
-  bestSetup: { setup: string; winRate: number; count: number };
+  bestSetup: { setup: string; winRate: number; count: number; tagContext: string | null };
   weakestWeekday: { label: string; winRate: number; totalTrades: number } | null;
   latestTrade: { outcome: TradeOutcome } | null;
   focusItems: string[];
@@ -68,7 +68,7 @@ export function DecisionSupportCards({
               </p>
               <p className="mt-1 text-sm text-muted-foreground">
                 {bestSetup.count
-                  ? `${bestSetup.count} trades at ${bestSetup.winRate.toFixed(1)}% win rate.`
+                  ? `${bestSetup.count} trades at ${bestSetup.winRate.toFixed(1)}% win rate${bestSetup.tagContext ? ` with ${bestSetup.tagContext}` : ""}.`
                   : "Journal more trades to identify your edge."}
               </p>
             </div>

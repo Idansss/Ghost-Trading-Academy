@@ -4,6 +4,7 @@ import { BellOff } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { NotificationItem } from "@/components/notifications/NotificationItem";
@@ -116,11 +117,16 @@ export default function NotificationsPage() {
         title="Notification Center"
         description="Track signals, targets, resources, recaps, and desk announcements."
         action={
-          data?.unreadCount ? (
-            <Button variant="outline" onClick={() => markAllMutation.mutate()}>
-              Mark all as read
+          <div className="flex gap-2">
+            <Button variant="outline" asChild>
+              <Link href="/notifications/preferences">Preferences</Link>
             </Button>
-          ) : undefined
+            {data?.unreadCount ? (
+              <Button variant="outline" onClick={() => markAllMutation.mutate()}>
+                Mark all as read
+              </Button>
+            ) : null}
+          </div>
         }
       />
 
@@ -146,24 +152,47 @@ export default function NotificationsPage() {
 
       {data?.notifications.length ? (
         <div className="space-y-3">
-          {data.notifications.map((notification) => (
-            <button
-              key={notification.id}
-              type="button"
-              className="w-full rounded-2xl border border-border bg-card text-left hover:bg-accent/40"
-              onClick={async () => {
-                if (!notification.isRead) {
-                  await markOneMutation.mutateAsync(notification.id);
-                }
-
-                if (notification.link) {
-                  router.push(notification.link);
-                }
-              }}
-            >
-              <NotificationItem notification={notification} truncate={false} />
-            </button>
-          ))}
+          {[
+            { label: "Today", matches: (d: Date) => d.toDateString() === new Date().toDateString() },
+            {
+              label: "Yesterday",
+              matches: (d: Date) =>
+                d.toDateString() === new Date(Date.now() - 24 * 60 * 60 * 1000).toDateString(),
+            },
+            {
+              label: "This Week",
+              matches: (d: Date) => Date.now() - d.getTime() < 7 * 24 * 60 * 60 * 1000,
+            },
+            { label: "Older", matches: () => true },
+          ].map((group) => {
+            const groupItems = data.notifications.filter((notification) =>
+              group.matches(new Date(notification.createdAt)),
+            );
+            if (!groupItems.length) return null;
+            return (
+              <div key={group.label} className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{group.label}</p>
+                {groupItems.map((notification) => (
+                  <button
+                    key={notification.id}
+                    type="button"
+                    aria-label={`Open notification: ${notification.title}`}
+                    className="w-full rounded-2xl border border-border bg-card text-left hover:bg-accent/40"
+                    onClick={async () => {
+                      if (!notification.isRead) {
+                        await markOneMutation.mutateAsync(notification.id);
+                      }
+                      if (notification.link) {
+                        router.push(notification.link);
+                      }
+                    }}
+                  >
+                    <NotificationItem notification={notification} truncate={false} />
+                  </button>
+                ))}
+              </div>
+            );
+          })}
 
           <div className="flex items-center justify-between border-t border-border pt-3">
             <Button

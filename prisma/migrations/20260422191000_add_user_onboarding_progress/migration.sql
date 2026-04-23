@@ -1,0 +1,11 @@
+CREATE TYPE "OnboardingStep" AS ENUM (
+  'PROFILE_SETUP',
+  'FIRST_TRADE_LOGGED',
+  'FIRST_SIGNAL_VIEWED',
+  'FIRST_RESOURCE_COMPLETED',
+  'CALCULATOR_USED'
+);
+
+ALTER TABLE "User"
+ADD COLUMN "onboardingCompleted" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN "onboardingProgress" "OnboardingStep"[] NOT NULL DEFAULT ARRAY[]::"OnboardingStep"[];

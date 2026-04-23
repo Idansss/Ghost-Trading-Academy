@@ -1,0 +1,149 @@
+# AUDIT FIX: CI/CD pipeline was entirely missing. This pipeline enforces:
+#   1. lint → test (with real Postgres + Redis) → build Docker image → deploy
+#   2. Docker image tagged with commit SHA (never just "latest")
+#   3. npm ci (not npm install) for deterministic installs
+#   4. Manual approval gate before production deploy
+
+name: CI / CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── Stage 1: Lint + Test ──────────────────────────────────────────────────
+  test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ghost
+          POSTGRES_PASSWORD: ghost_test
+          POSTGRES_DB: ghost_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ghost -d ghost_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://ghost:ghost_test@localhost:5432/ghost_test?schema=public
+      # AUDIT FIX: NEXTAUTH_SECRET must be ≥32 chars after the env.ts fix.
+      NEXTAUTH_SECRET: "ci-test-secret-for-testing-only-32chars"
+      NEXTAUTH_URL: http://localhost:3000
+      NODE_ENV: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      # AUDIT FIX: Uses npm ci (not npm install) — deterministic, faster, and
+      # fails on lockfile mismatch rather than silently updating it.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Run migrations against test DB
+        run: npx prisma migrate deploy
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+
+  # ─── Stage 2: Build Docker image ──────────────────────────────────────────
+  build:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+    needs: test
+    # Only build on pushes to main (not on PRs)
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # AUDIT FIX: Image is tagged with the commit SHA so each build is uniquely
+      # addressable. Never tagging with "latest" only prevents rollback capability.
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}:${{ github.sha }}
+            ghcr.io/${{ github.repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─── Stage 3: Deploy to Staging ───────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: build
+    environment: staging
+
+    steps:
+      - name: Deploy image to staging
+        run: |
+          echo "Deploying ghcr.io/${{ github.repository }}:${{ github.sha }} to staging"
+          # Replace with your actual deployment command, e.g.:
+          # ssh deploy@staging.example.com "docker pull ... && docker-compose up -d"
+
+  # ─── Stage 4: Deploy to Production (manual approval required) ─────────────
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    # The "production" environment in GitHub requires a manual reviewer approval
+    # before this job runs. Configure the reviewer in Settings → Environments.
+    environment: production
+
+    steps:
+      - name: Deploy image to production
+        run: |
+          echo "Deploying ghcr.io/${{ github.repository }}:${{ github.sha }} to production"
+          # Replace with your actual deployment command

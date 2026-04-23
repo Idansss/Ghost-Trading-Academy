@@ -13,12 +13,6 @@ enum Role {
   MEMBER
 }
 
-enum SubscriptionStatus {
-  ACTIVE
-  EXPIRED
-  TRIAL
-}
-
 enum Direction {
   LONG
   SHORT
@@ -40,11 +34,12 @@ enum RiskLevel {
 
 enum SignalStatus {
   ACTIVE
-  PENDING
-  WIN
-  LOSS
+  TP1_HIT
+  TP2_HIT
+  TP3_HIT
+  STOPPED
   CANCELLED
-  BREAKEVEN
+  CLOSED
 }
 
 enum MarketBias {
@@ -79,6 +74,41 @@ enum NotificationType {
   WEEKLY_RECAP
   ANNOUNCEMENT
   SYSTEM
+  SIGNAL_UPDATE
+  NEW_ANNOUNCEMENT
+  NEW_RECAP
+  WIN_APPROVED
+  STREAK_REMINDER
+  WEEKLY_REVIEW_READY
+  LEADERBOARD_UPDATE
+  BROADCAST
+  DIRECT_MESSAGE
+}
+
+enum EmotionState {
+  CALM
+  CONFIDENT
+  ANXIOUS
+  FEARFUL
+  GREEDY
+  BORED
+  FRUSTRATED
+  EUPHORIC
+  NEUTRAL
+}
+
+enum BroadcastChannel {
+  EMAIL
+  IN_APP
+  PUSH
+}
+
+enum OnboardingStep {
+  PROFILE_SETUP
+  FIRST_TRADE_LOGGED
+  FIRST_SIGNAL_VIEWED
+  FIRST_RESOURCE_COMPLETED
+  CALCULATOR_USED
 }
 
 model User {
@@ -88,10 +118,23 @@ model User {
   password            String
   role                Role                 @default(MEMBER)
   accountBalance      Float                @default(10000)
+  accountSize         Float?
+  riskPerTrade        Float                @default(1.0)
+  leaderboardOptIn    Boolean              @default(false)
   avatarUrl           String?
+  pushPlayerId        String?
+  emailSignalAlerts   Boolean              @default(true)
+  twoFactorEnabled    Boolean              @default(false)
+  twoFactorSecret     String?
+  referralCode        String               @unique
+  referredBy          String?
+  onboardingCompleted Boolean              @default(false)
+  onboardingProgress  OnboardingStep[]     @default([])
+  journalStreak       Int                  @default(0)
+  longestStreak       Int                  @default(0)
+  lastJournalDate     DateTime?
+  disciplineScore     Float                @default(0)
   createdAt           DateTime             @default(now())
-  subscriptionStatus  SubscriptionStatus   @default(TRIAL)
-  subscriptionExpiry  DateTime?
   updatedAt           DateTime             @updatedAt
   accounts            Account[]
   sessions            Session[]
@@ -103,7 +146,149 @@ model User {
   memberWins          MemberWin[]
   notifications       Notification[]
   signalsTaken        SignalTaken[]
+  signalViews         SignalView[]
   resourceCompletions ResourceCompletion[]
+  emailAlertLogs      SignalEmailAlertLog[]
+  weeklyReviews       WeeklyReview[]
+  watchlistItems      WatchlistItem[]
+  sentBroadcasts      BroadcastMessage[]
+  auditLogs           AuditLog[]
+  activity            UserActivity[]
+  notificationPreferences NotificationPreference[]
+  quizAttempts        QuizAttempt[]
+  courseEnrollments   CourseEnrollment[]
+  backupCodes         TwoFactorBackupCode[]
+  referralsMade       Referral[]           @relation("referrer")
+  referralReceived    Referral?            @relation("referred")
+  referrer            User?                @relation("UserReferrals", fields: [referredBy], references: [id], onDelete: SetNull)
+  referredUsers       User[]               @relation("UserReferrals")
+  prismachatMessages  ChatMessage[]
+  channelMembers      ChannelMember[]
+  messageReactions    MessageReaction[]
+  sentDMs             ChatChannel[]        @relation("DMCreator")
+}
+
+model ChatChannel {
+  id             String          @id @default(cuid())
+  name           String
+  slug           String          @unique
+  description    String?
+  type           ChannelType     @default(GROUP)
+  isReadOnly     Boolean         @default(false)
+  isArchived     Boolean         @default(false)
+  createdById    String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  createdBy      User?           @relation("DMCreator", fields: [createdById], references: [id])
+  members        ChannelMember[]
+  messages       ChatMessage[]
+  pinnedMessages PinnedMessage[]
+}
+
+enum ChannelType {
+  GROUP
+  DM
+  ANNOUNCEMENT
+}
+
+model ChannelMember {
+  id         String      @id @default(cuid())
+  channelId  String
+  userId     String
+  role       ChannelRole @default(MEMBER)
+  lastReadAt DateTime    @default(now())
+  joinedAt   DateTime    @default(now())
+  isMuted    Boolean     @default(false)
+  channel    ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, userId])
+  @@index([userId])
+  @@index([channelId])
+}
+
+enum ChannelRole {
+  MEMBER
+  MODERATOR
+  ADMIN
+}
+
+model ChatMessage {
+  id          String        @id @default(cuid())
+  channelId   String
+  authorId    String
+  body        String?
+  imageUrl    String?
+  imageWidth  Int?
+  imageHeight Int?
+  imageName   String?
+  replyToId   String?
+  isEdited    Boolean       @default(false)
+  isPinned    Boolean       @default(false)
+  deletedAt   DateTime?
+  editedAt    DateTime?
+  createdAt   DateTime      @default(now())
+  channel     ChatChannel   @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  author      User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  // AUDIT FIX: Replies must survive if a parent message is ever hard-deleted,
+  // so the self-reference now uses onDelete: SetNull instead of the default.
+  replyTo     ChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
+  replies     ChatMessage[] @relation("MessageReplies")
+  reactions   MessageReaction[]
+  pinned      PinnedMessage?
+
+  @@index([channelId, createdAt])
+  @@index([authorId])
+}
+
+model MessageReaction {
+  id        String      @id @default(cuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime    @default(now())
+  message   ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+model PinnedMessage {
+  id         String      @id @default(cuid())
+  channelId  String
+  messageId  String      @unique
+  pinnedById String
+  pinnedAt   DateTime    @default(now())
+  channel    ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  message    ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  // AUDIT FIX: PinnedMessage had no index on channelId. The pinned messages
+  // endpoint filters by channelId, so this index prevents a full table scan.
+  @@index([channelId])
+}
+
+model SiteConfig {
+  id              String   @id @default("main")
+  tickerSymbols   String[] @default(["BTCUSDT", "ETHUSDT", "SOLUSDT", "BNBUSDT", "XRPUSDT"])
+  heroHeadline    String?
+  heroSubheadline String?
+  ctaLabel        String   @default("Apply for Access")
+  ctaUrl          String   @default("/auth/login")
+  isWaitlistMode  Boolean  @default(false)
+  accentColor       String  @default("#D4A017")
+  logoUrl           String?
+  faviconUrl        String?
+  platformName      String  @default("Ghost Trading Academy")
+  supportEmail      String?
+  telegramLink      String?
+  twitterLink       String?
+  discordLink       String?
+  defaultTimezone   String  @default("UTC")
+  maintenanceMode   Boolean @default(false)
+  maintenanceMessage String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Trade {
@@ -121,15 +306,58 @@ model Trade {
   pnlPercent  Float
   outcome     TradeOutcome
   setupType   String
+  tags        String[]
   notes       String?
+  chartImageUrl String?
   tradeDate   DateTime
   closedAt    DateTime?
   month       String
+  emotionBefore EmotionState?
+  emotionDuring EmotionState?
+  emotionAfter  EmotionState?
+  followedPlan  Boolean?
+  revenge       Boolean      @default(false)
+  overSized     Boolean      @default(false)
+  movedStop     Boolean      @default(false)
+  exitedEarly   Boolean      @default(false)
+  mistakeNote   String?
+  lessonLearned String?
+  tradeRating   Int?
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, month])
+}
+
+model WeeklyReview {
+  id              String   @id @default(cuid())
+  userId          String
+  weekStartDate   DateTime
+  totalTrades     Int
+  winRate         Float
+  totalPnl        Float
+  totalR          Float
+  bestTrade       String?
+  worstTrade      String?
+  whatWorked      String
+  whatDidntWork   String
+  nextWeekFocus   String
+  disciplineScore Int
+  overallRating   Int
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStartDate])
+  @@index([userId, createdAt])
+}
+
+model TradeTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  color     String   @default("#888888")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Signal {
@@ -146,12 +374,44 @@ model Signal {
   rrRatio   Float
   reasoning String
   status    SignalStatus  @default(ACTIVE)
+  outcomeNote String?
+  tp1Hit    Boolean       @default(false)
+  tp2Hit    Boolean       @default(false)
+  tp3Hit    Boolean       @default(false)
+  stopHit   Boolean       @default(false)
   postedAt  DateTime      @default(now())
   closedAt  DateTime?
+  finalPnlR Float?
   isVipOnly Boolean       @default(true)
   postedBy  String
   author    User          @relation(fields: [postedBy], references: [id], onDelete: Cascade)
   takenBy   SignalTaken[]
+  viewedBy  SignalView[]
+  emailAlertLogs SignalEmailAlertLog[]
+
+  // AUDIT FIX: Signal had no indexes despite being the most queried table for the
+  // signals list page (filter by status, order by postedAt) and admin queries.
+  @@index([status, postedAt])
+  @@index([postedBy])
+  @@index([closedAt])
+}
+
+enum SignalEmailAlertType {
+  NEW_SIGNAL
+  SIGNAL_UPDATE
+}
+
+model SignalEmailAlertLog {
+  id        String               @id @default(cuid())
+  userId     String
+  signalId   String
+  alertType  SignalEmailAlertType
+  sentAt     DateTime            @default(now())
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  signal     Signal              @relation(fields: [signalId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sentAt])
+  @@index([signalId, sentAt])
 }
 
 model SignalTaken {
@@ -166,6 +426,18 @@ model SignalTaken {
   @@index([userId])
 }
 
+model SignalView {
+  id        String   @id @default(cuid())
+  userId    String
+  signalId  String
+  viewedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  signal    Signal   @relation(fields: [signalId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, signalId])
+  @@index([userId, viewedAt])
+}
+
 model DailyOutlook {
   id              String     @id @default(cuid())
   date            DateTime   @unique
@@ -177,6 +449,11 @@ model DailyOutlook {
   createdBy       String
   createdAt       DateTime   @default(now())
   author          User       @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+  // AUDIT FIX: FK field createdBy had no index, causing full table scans when
+  // filtering outlooks by author (e.g. admin edit views).
+  @@index([createdBy])
+  @@index([date])
 }
 
 model Resource {
@@ -191,8 +468,16 @@ model Resource {
   meta        String
   uploadedAt  DateTime             @default(now())
   uploadedBy  String
+  moduleId    String?
   author      User                 @relation(fields: [uploadedBy], references: [id], onDelete: Cascade)
   completions ResourceCompletion[]
+  module      CourseModule?        @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  // AUDIT FIX: Resource had no indexes on FK fields. The education page queries
+  // resources by moduleId and the admin filters by uploadedBy.
+  @@index([uploadedBy])
+  @@index([moduleId])
+  @@index([tag, uploadedAt])
 }
 
 model ResourceCompletion {
@@ -216,6 +501,12 @@ model Announcement {
   createdAt DateTime         @default(now())
   postedBy  String
   author    User             @relation(fields: [postedBy], references: [id], onDelete: Cascade)
+
+  // AUDIT FIX: Announcement had no indexes. Listings are always ordered by
+  // createdAt desc and frequently filtered by type.
+  @@index([createdAt])
+  @@index([postedBy])
+  @@index([type, createdAt])
 }
 
 model WeeklyRecap {
@@ -244,6 +535,11 @@ model MemberWin {
   isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // AUDIT FIX: MemberWin had no indexes. Listing queries filter by isApproved
+  // and order by createdAt, so a compound index on both is appropriate.
+  @@index([userId])
+  @@index([isApproved, createdAt])
 }
 
 model Notification {
@@ -258,6 +554,161 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
+}
+
+model NotificationPreference {
+  id     String           @id @default(cuid())
+  userId String
+  type   NotificationType
+  inApp  Boolean          @default(true)
+  email  Boolean          @default(false)
+  push   Boolean          @default(false)
+  user   User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+model WatchlistItem {
+  id         String   @id @default(cuid())
+  userId     String
+  symbol     String
+  notes      String?
+  alertPrice Float?
+  addedAt    DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol])
+  @@index([userId, addedAt])
+}
+
+model BroadcastMessage {
+  id             String             @id @default(cuid())
+  subject        String
+  body           String
+  sentVia        BroadcastChannel[]
+  sentAt         DateTime           @default(now())
+  sentBy         String
+  recipientCount Int
+  admin          User               @relation(fields: [sentBy], references: [id], onDelete: Cascade)
+
+  @@index([sentAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  entity    String
+  entityId  String
+  metadata  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+}
+
+model UserActivity {
+  id        String   @id @default(cuid())
+  userId    String
+  date      DateTime
+  action    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([date])
+  @@index([userId, date])
+}
+
+model TwoFactorBackupCode {
+  id        String   @id @default(cuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, usedAt])
+}
+
+model Referral {
+  id         String   @id @default(cuid())
+  referrerId String
+  referredId String   @unique
+  createdAt  DateTime @default(now())
+  referrer   User     @relation("referrer", fields: [referrerId], references: [id], onDelete: Cascade)
+  referred   User     @relation("referred", fields: [referredId], references: [id], onDelete: Cascade)
+
+  @@index([referrerId, createdAt])
+}
+
+model Course {
+  id          String             @id @default(cuid())
+  title       String
+  description String
+  coverImage  String?
+  order       Int
+  isPublished Boolean            @default(false)
+  modules     CourseModule[]
+  enrollments CourseEnrollment[]
+}
+
+model CourseModule {
+  id        String      @id @default(cuid())
+  courseId  String
+  title     String
+  order     Int
+  resources Resource[]
+  quiz      Quiz?
+  course    Course      @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, order])
+}
+
+model Quiz {
+  id        String         @id @default(cuid())
+  moduleId  String         @unique
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+  module    CourseModule   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+}
+
+model QuizQuestion {
+  id           String   @id @default(cuid())
+  quizId       String
+  question     String
+  options      String[]
+  correctIndex Int
+  explanation  String?
+  quiz         Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model QuizAttempt {
+  id      String   @id @default(cuid())
+  quizId  String
+  userId  String
+  score   Int
+  passed  Boolean
+  answers Int[]
+  takenAt DateTime @default(now())
+  quiz    Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([quizId, userId, takenAt])
+}
+
+model CourseEnrollment {
+  id          String    @id @default(cuid())
+  courseId    String
+  userId      String
+  enrolledAt  DateTime  @default(now())
+  completedAt DateTime?
+  course      Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, userId])
+  @@index([userId, completedAt])
 }
 
 model Account {

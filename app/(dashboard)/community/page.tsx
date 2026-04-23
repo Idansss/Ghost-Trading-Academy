@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { AnnouncementFeed } from "@/components/community/AnnouncementFeed";
 import { MonthlySnapshotGrid } from "@/components/community/MonthlySnapshotGrid";
 import { WeeklyRecapCard } from "@/components/community/WeeklyRecapCard";
 import { RecapArchive } from "@/components/community/RecapArchive";
 import { WinsFeedClient } from "@/components/community/WinsFeedClient";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { Button } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getMonthlySnapshot } from "@/lib/calculations";
@@ -46,6 +48,11 @@ export default async function CommunityPage() {
         eyebrow="Community"
         title="Desk Activity"
         description="Announcements, member wins, weekly recap, and your full-year snapshot."
+        action={
+          <Button asChild variant="outline">
+            <Link href="/community/leaderboard">View leaderboard</Link>
+          </Button>
+        }
       />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.45fr_1fr]">

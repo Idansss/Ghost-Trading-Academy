@@ -2,8 +2,8 @@
 
 import { Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,8 +30,11 @@ function getPasswordStrength(password: string) {
   return score;
 }
 
-export default function RegisterPage() {
+// AUDIT FIX: useSearchParams() requires a Suspense boundary; extract inner component and wrap.
+function RegisterContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const refCode = searchParams.get("ref");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +52,7 @@ export default function RegisterPage() {
       password: "",
       confirmPassword: "",
       terms: true,
+      referralCode: refCode ?? "",
     },
   });
 
@@ -85,11 +89,12 @@ export default function RegisterPage() {
           <CardHeader className="space-y-2 text-center">
             <CardTitle className="text-2xl">Join Ghost VIP</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Create your member account. VIP upgrades are managed by admins.
+              Create your member account and get access to the trading desk.
             </p>
           </CardHeader>
           <CardContent>
             <form className="space-y-5" onSubmit={onSubmit}>
+              <input type="hidden" {...register("referralCode")} />
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input id="name" placeholder="Ghost Trader" {...register("name")} />
@@ -97,6 +102,12 @@ export default function RegisterPage() {
                   <p className="text-xs text-[color:var(--color-red)]">{errors.name.message}</p>
                 ) : null}
               </div>
+              {refCode ? (
+                <div className="space-y-2">
+                  <Label>Referral Code</Label>
+                  <Input value={refCode} disabled />
+                </div>
+              ) : null}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" placeholder="you@example.com" {...register("email")} />
@@ -188,5 +199,13 @@ export default function RegisterPage() {
         </Card>
       </div>
     </main>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterContent />
+    </Suspense>
   );
 }

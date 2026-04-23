@@ -1,0 +1,21 @@
+{
+  "name": "Ghost Trading Academy",
+  "short_name": "Ghost Academy",
+  "description": "Private crypto trading desk web app",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "theme_color": "#D4A017",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

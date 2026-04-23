@@ -1,18 +1,22 @@
 import bcrypt from "bcryptjs";
-import { SubscriptionStatus } from "@prisma/client";
+import { addUserToDefaultChatChannels } from "@/lib/chat";
 import { requireAdmin } from "@/lib/auth";
 import { sendWelcomeEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { apiError, safeJson } from "@/lib/utils";
 import { memberCreateSchema, memberUpdateSchema } from "@/lib/validators";
+import { logAdminAction } from "@/lib/audit-log";
+import { createUniqueReferralCode } from "@/lib/referrals";
+
+// AUDIT FIX: All authenticated API routes must opt out of static rendering
+export const dynamic = "force-dynamic";
 
 const memberSelect = {
   id: true,
   name: true,
   email: true,
   role: true,
-  subscriptionStatus: true,
-  subscriptionExpiry: true,
+  twoFactorEnabled: true,
   createdAt: true,
 } as const;
 
@@ -24,20 +28,23 @@ export async function GET() {
       select: memberSelect,
     });
     return Response.json({ users });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to load members.", 500);
   }
 }
 
 export async function POST(request: Request) {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const body = await safeJson<unknown>(request);
     const parsed = memberCreateSchema.safeParse(body);
 
+    // AUDIT FIX: Validation error shape changed from { message, errors } to
+    // { error, details } for consistency with the global error format.
     if (!parsed.success) {
       return Response.json(
-        { message: "Invalid member payload.", errors: parsed.error.flatten().fieldErrors },
+        { error: "Validation failed.", details: parsed.error.flatten() },
         { status: 422 },
       );
     }
@@ -49,43 +56,47 @@ export async function POST(request: Request) {
       return apiError("A user with this email already exists.", 409);
     }
 
-    const expiryDate = parsed.data.subscriptionExpiry
-      ? new Date(parsed.data.subscriptionExpiry)
-      : null;
-
     const user = await prisma.user.create({
       data: {
         name: parsed.data.name,
         email,
         password: await bcrypt.hash(parsed.data.temporaryPassword, 12),
         role: parsed.data.role,
-        subscriptionExpiry: expiryDate,
-        subscriptionStatus:
-          parsed.data.role === "MEMBER"
-            ? SubscriptionStatus.TRIAL
-            : expiryDate && expiryDate < new Date()
-              ? SubscriptionStatus.EXPIRED
-              : SubscriptionStatus.ACTIVE,
+        referralCode: await createUniqueReferralCode(),
       },
       select: memberSelect,
     });
 
+    // AUDIT FIX: Admin-created members now get the same default channel
+    // memberships as self-registered users to prevent empty chat sidebars.
+    await addUserToDefaultChatChannels(user.id, prisma);
+
     await sendWelcomeEmail(user.email, user.name);
+    await logAdminAction({
+      userId: admin.id,
+      action: "MEMBER_CREATED",
+      entity: "User",
+      entityId: user.id,
+      metadata: { role: user.role, email: user.email },
+    });
 
     return Response.json(user);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to create member.", 500);
   }
 }
 
 export async function PATCH(request: Request) {
   try {
-    await requireAdmin();
+    const admin = await requireAdmin();
     const body = await safeJson<unknown>(request);
     const parsed = memberUpdateSchema.safeParse(body);
+    // AUDIT FIX: Validation error shape changed from { message, errors } to
+    // { error, details } for consistency with the global error format.
     if (!parsed.success) {
       return Response.json(
-        { message: "Invalid member update.", errors: parsed.error.flatten().fieldErrors },
+        { error: "Validation failed.", details: parsed.error.flatten() },
         { status: 422 },
       );
     }
@@ -94,16 +105,20 @@ export async function PATCH(request: Request) {
       where: { id: parsed.data.userId },
       data: {
         role: parsed.data.role,
-        subscriptionStatus: parsed.data.subscriptionStatus,
-        subscriptionExpiry: parsed.data.subscriptionExpiry
-          ? new Date(parsed.data.subscriptionExpiry)
-          : null,
       },
       select: memberSelect,
     });
+    await logAdminAction({
+      userId: admin.id,
+      action: "MEMBER_UPDATED",
+      entity: "User",
+      entityId: user.id,
+      metadata: { role: user.role },
+    });
 
     return Response.json(user);
-  } catch {
+  } catch (error) {
+    console.error(error);
     return apiError("Unable to update member.", 500);
   }
 }

@@ -109,7 +109,7 @@ export function Sidebar({ user }: { user: Session["user"] }) {
           ) : null}
         </div>
         {!collapsed ? (
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-3">
             <Badge
               variant={
                 user.role === "VIP" || user.role === "ADMIN" ? "default" : "muted"
@@ -122,9 +122,6 @@ export function Sidebar({ user }: { user: Session["user"] }) {
                   ? "VIP"
                   : "Member"}
             </Badge>
-            <span className="text-xs text-muted-foreground">
-              {user.subscriptionStatus}
-            </span>
           </div>
         ) : null}
       </div>

@@ -6,8 +6,13 @@ import {
   Compass,
   GraduationCap,
   LayoutGrid,
+  LineChart,
   Megaphone,
+  MessageSquare,
+  Settings2,
   Shield,
+  Send,
+  Tags,
   Users,
   Zap,
 } from "lucide-react";
@@ -27,6 +32,9 @@ export const primaryNav: NavigationItem[] = [
   { href: "/education", label: "Education", icon: GraduationCap },
   { href: "/calculator", label: "Calculator", icon: Calculator },
   { href: "/community", label: "Community", icon: Users },
+  { href: "/community/chat", label: "Chat", icon: MessageSquare },
+  { href: "/watchlist", label: "Watchlist", icon: LineChart },
+  { href: "/community/leaderboard", label: "Leaderboard", icon: BarChart3 },
 ];
 
 export const adminNav: NavigationItem = {
@@ -40,10 +48,18 @@ export const adminSubNav: NavigationItem[] = [
   { href: "/admin/members", label: "Members", icon: Users },
   { href: "/admin/signals", label: "Signals", icon: Zap },
   { href: "/admin/resources", label: "Resources", icon: BookOpenText },
+  { href: "/admin/education", label: "Education", icon: GraduationCap },
   { href: "/admin/outlook", label: "Outlook", icon: Compass },
   { href: "/admin/recaps", label: "Recaps", icon: BarChart3 },
   { href: "/admin/announcements", label: "Announcements", icon: Megaphone },
+  { href: "/admin/chat", label: "Chat", icon: MessageSquare },
+  { href: "/admin/broadcast", label: "Broadcast", icon: Megaphone },
   { href: "/admin/wins", label: "Win Moderation", icon: Users },
+  { href: "/admin/engagement", label: "Engagement", icon: BarChart3 },
+  { href: "/admin/tags", label: "Trade Tags", icon: Tags },
+  { href: "/admin/site-config", label: "Site Config", icon: Settings2 },
+  { href: "/admin/audit-log", label: "Audit Log", icon: Shield },
+  { href: "/admin/reports", label: "Reports", icon: Send },
 ];
 
 export function isPathActive(pathname: string, href: string) {

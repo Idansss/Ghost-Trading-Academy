@@ -7,7 +7,9 @@ import { isPathActive } from "@/components/layout/navigation";
 import { primaryNav } from "@/components/layout/navigation";
 
 const mobileItems = primaryNav.filter((item) =>
-  ["/dashboard", "/journal", "/signals", "/education", "/community"].includes(item.href),
+  // AUDIT FIX: Mobile navigation now exposes chat directly instead of the
+  // broader community landing page so the chat experience is reachable in one tap.
+  ["/dashboard", "/journal", "/signals", "/community/chat", "/education"].includes(item.href),
 );
 
 export function MobileBottomNav() {
