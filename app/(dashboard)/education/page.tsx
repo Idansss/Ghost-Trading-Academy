@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Plus, Settings2 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EducationSkeleton } from "@/components/skeletons/EducationSkeleton";
@@ -58,8 +60,11 @@ type EducationCourse = {
 type CoursesResponse = { courses: EducationCourse[] };
 
 export default function EducationPage() {
+  const router = useRouter();
+  const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [quizAnswers, setQuizAnswers] = useState<Record<string, Record<number, number>>>({});
+  const isAdmin = session?.user.role === "ADMIN";
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["education-courses"],
     queryFn: () => fetchJson<CoursesResponse>("/api/education/courses"),
@@ -83,6 +88,24 @@ export default function EducationPage() {
           eyebrow="Education"
           title="Courses & Modules"
           description="Complete structured courses, pass quizzes, and download completion certificates."
+          action={
+            isAdmin ? (
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="outline">
+                  <Link href="/admin/education">
+                    <Settings2 className="mr-2 h-4 w-4" />
+                    Manage Courses
+                  </Link>
+                </Button>
+                <Button asChild>
+                  <Link href="/admin/education">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Course
+                  </Link>
+                </Button>
+              </div>
+            ) : null
+          }
         />
 
         {isLoading ? (
@@ -201,6 +224,14 @@ export default function EducationPage() {
             icon={<BookOpen />}
             title="No courses yet"
             description="Courses will appear here once published."
+            action={
+              isAdmin
+                ? {
+                    label: "Create first course",
+                    onClick: () => router.push("/admin/education"),
+                  }
+                : undefined
+            }
           />
         )}
       </div>

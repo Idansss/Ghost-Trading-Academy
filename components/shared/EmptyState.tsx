@@ -4,16 +4,18 @@ import { EmptyState as BaseEmptyState } from "@/components/ui/EmptyState";
 export function EmptyState({
   title,
   description,
+  action,
 }: {
   title: string;
   description: string;
-  action?: React.ReactNode;
+  action?: { label: string; onClick: () => void };
 }) {
   return (
     <BaseEmptyState
       icon={<Inbox />}
       title={title}
       description={description}
+      action={action}
     />
   );
 }
