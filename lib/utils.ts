@@ -2,7 +2,6 @@ import { type ClassValue, clsx } from "clsx";
 import type { Trade } from "@prisma/client";
 import { format, formatDistanceToNowStrict } from "date-fns";
 import { twMerge } from "tailwind-merge";
-import logger from "@/server/core/logger";
 
 /**
  * Merges conditional Tailwind class names.
@@ -68,15 +67,17 @@ export function apiError(message: string, status = 400, code = "BAD_REQUEST") {
 
 /**
  * Maps thrown errors to the correct HTTP response.
- * AUDIT FIX: Replaced console.error with pino logger and removed string-based
- * error message matching now that requireUser/requireAdmin throw AppError instances.
+ * AUDIT FIX: Removed string-based error message matching now that
+ * requireUser/requireAdmin throw AppError instances with statusCode/code.
+ * NOTE: lib/utils.ts is imported by client components, so we use console.error
+ * here instead of the pino logger (which is a Node.js-only module).
  */
 export function handleApiError(error: unknown, fallbackMessage = "Internal server error."): Response {
   if (error instanceof Error && "statusCode" in error && "code" in error) {
     const appErr = error as { statusCode: number; code: string; message: string };
     return apiError(appErr.message, appErr.statusCode, appErr.code);
   }
-  logger.error({ type: "unhandled_api_error", err: error });
+  console.error("[API Error]", error);
   return apiError(fallbackMessage, 500, "INTERNAL_ERROR");
 }
 
