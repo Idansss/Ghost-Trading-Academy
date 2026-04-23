@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { getSiteConfig } from "@/lib/site-config";
-import { getSignalTrackRecord } from "@/lib/signal-performance";
+import { getSignalTrackRecord } from "@/server/repositories/signal-repository";
 import { redirect } from "next/navigation";
 import { LandingCta } from "@/components/landing/LandingCta";
 

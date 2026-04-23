@@ -531,13 +531,12 @@ model MemberWin {
   coin       String
   pnlPercent Float
   message    String
+  imageUrl   String?
   likesCount Int      @default(0)
   isApproved Boolean  @default(false)
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // AUDIT FIX: MemberWin had no indexes. Listing queries filter by isApproved
-  // and order by createdAt, so a compound index on both is appropriate.
   @@index([userId])
   @@index([isApproved, createdAt])
 }

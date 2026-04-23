@@ -46,7 +46,10 @@ export async function POST(request: Request) {
 
     const win = await prisma.memberWin.create({
       data: {
-        ...parsed.data,
+        coin: parsed.data.coin,
+        pnlPercent: parsed.data.pnlPercent,
+        message: parsed.data.message,
+        imageUrl: parsed.data.imageUrl ?? null,
         userId: user.id,
       },
     });

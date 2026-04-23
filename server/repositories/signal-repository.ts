@@ -1,5 +1,11 @@
 import type { Prisma, PrismaClient, SignalStatus } from "@prisma/client";
+import { subDays } from "date-fns";
 import { prisma } from "@/lib/prisma";
+import {
+  calculateSignalPerformanceStats,
+  buildSignalEquityCurve,
+  settledSignalStatuses,
+} from "@/lib/signal-performance";
 
 export class SignalRepository {
   constructor(private readonly db: PrismaClient = prisma) {}
@@ -202,3 +208,51 @@ export class SignalRepository {
 }
 
 export const signalRepository = new SignalRepository();
+
+/**
+ * Fetches all settled signals for the track record page and stats endpoint.
+ * Moved from lib/signal-performance.ts to keep that module client-safe
+ * (no Prisma imports so it can be bundled into client components).
+ */
+export async function getSignalTrackRecord(range: "30d" | "90d" | "all" = "all") {
+  const since =
+    range === "30d"
+      ? subDays(new Date(), 30)
+      : range === "90d"
+        ? subDays(new Date(), 90)
+        : null;
+
+  const signals = await prisma.signal.findMany({
+    where: {
+      status: { in: settledSignalStatuses },
+      ...(since ? { closedAt: { gte: since } } : {}),
+    },
+    orderBy: { closedAt: "desc" },
+    select: {
+      id: true,
+      coin: true,
+      direction: true,
+      status: true,
+      tp1Hit: true,
+      tp2Hit: true,
+      tp3Hit: true,
+      stopHit: true,
+      finalPnlR: true,
+      closedAt: true,
+      postedAt: true,
+      entryZone: true,
+      stopLoss: true,
+      tp1: true,
+      tp2: true,
+      tp3: true,
+      rrRatio: true,
+      outcomeNote: true,
+    },
+  });
+
+  return {
+    stats: calculateSignalPerformanceStats(signals),
+    signals,
+    equityCurve: buildSignalEquityCurve(signals),
+  };
+}

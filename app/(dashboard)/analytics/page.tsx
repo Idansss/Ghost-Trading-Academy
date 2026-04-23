@@ -247,7 +247,7 @@ export default function AnalyticsPage() {
             ))}
           </div>
 
-          <div className="grid gap-4 xl:grid-cols-[1.1fr_1.1fr_1fr_0.9fr]">
+          <div className="grid gap-4 xl:grid-cols-[1.1fr_1.1fr_1fr_1fr]">
             <div className="space-y-2">
               <p className="text-sm font-medium">Pair / Coin</p>
               <AnalyticsMultiSelect
@@ -304,8 +304,8 @@ export default function AnalyticsPage() {
               <p className="text-sm font-medium">Custom Range</p>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button type="button" variant="outline" className="w-full justify-between">
-                    <span className="truncate text-left">
+                  <Button type="button" variant="outline" className="w-full min-w-0 justify-between">
+                    <span className="min-w-0 truncate text-left text-sm">
                       {selectedDateRange?.from
                         ? selectedDateRange.to
                           ? `${format(selectedDateRange.from, "MMM d, yyyy")} - ${format(selectedDateRange.to, "MMM d, yyyy")}`

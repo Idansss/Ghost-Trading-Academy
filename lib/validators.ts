@@ -162,6 +162,7 @@ export const memberWinSchema = z.object({
   coin: z.string().min(3),
   pnlPercent: z.coerce.number(),
   message: z.string().min(3),
+  imageUrl: z.string().url().optional().nullable(),
 });
 
 export const memberUpdateSchema = z.object({

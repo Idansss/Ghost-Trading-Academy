@@ -1,4 +1,5 @@
 import { HydrationBoundary, QueryClient, dehydrate } from "@tanstack/react-query";
+import { Prisma } from "@prisma/client";
 import { ChatLayout } from "@/components/chat/ChatLayout";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { requireUser } from "@/lib/auth";
@@ -54,25 +55,26 @@ export default async function CommunityChatPage({
     },
   });
 
-  // AUDIT FIX: Previously fired one prisma.chatMessage.count() per channel in
-  // Promise.all (N+1). Replaced with a single raw SQL aggregation so unread
-  // counts are computed in one round-trip regardless of channel count.
+  // Compute unread counts in a single aggregation query instead of N+1.
+  // Prisma.join() produces safe $1, $2, ... placeholders for the IN list.
   const channelIds = channels.map((ch) => ch.id);
   type UnreadRow = { channel_id: string; count: bigint };
-  const unreadRows = channelIds.length > 0
-    ? await prisma.$queryRaw<UnreadRow[]>`
-        SELECT cm."channelId" AS channel_id, COUNT(msg.id)::bigint AS count
-        FROM "ChannelMember" cm
-        LEFT JOIN "ChatMessage" msg
-          ON msg."channelId" = cm."channelId"
-          AND msg."authorId" != ${user.id}
-          AND msg."createdAt" > cm."lastReadAt"
-          AND msg."deletedAt" IS NULL
-        WHERE cm."userId" = ${user.id}
-          AND cm."channelId" = ANY(${channelIds}::text[])
-        GROUP BY cm."channelId"
-      `
-    : ([] as UnreadRow[]);
+  const unreadRows: UnreadRow[] = channelIds.length > 0
+    ? await prisma.$queryRaw<UnreadRow[]>(
+        Prisma.sql`
+          SELECT cm."channelId" AS channel_id, COUNT(msg.id)::bigint AS count
+          FROM "ChannelMember" cm
+          LEFT JOIN "ChatMessage" msg
+            ON msg."channelId" = cm."channelId"
+            AND msg."authorId" != ${user.id}
+            AND msg."createdAt" > cm."lastReadAt"
+            AND msg."deletedAt" IS NULL
+          WHERE cm."userId" = ${user.id}
+            AND cm."channelId" IN (${Prisma.join(channelIds)})
+          GROUP BY cm."channelId"
+        `,
+      )
+    : [];
 
   const unreadMap = new Map<string, number>(
     unreadRows.map(({ channel_id, count }) => [channel_id, Number(count)]),

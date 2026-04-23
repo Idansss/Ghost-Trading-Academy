@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SignalTrackRecordChart } from "@/components/signals/SignalTrackRecordChart";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getSignalOutcomeLabel, getSignalStatusVariant, getSignalTrackRecord } from "@/lib/signal-performance";
+import { getSignalOutcomeLabel, getSignalStatusVariant } from "@/lib/signal-performance";
+import { getSignalTrackRecord } from "@/server/repositories/signal-repository";
 
 function TrackRecordTabs({ value }: { value: "30d" | "90d" | "all" }) {
   return (

@@ -10,6 +10,7 @@ type Win = {
   coin: string;
   pnlPercent: number;
   message: string;
+  imageUrl?: string | null;
   likesCount: number;
   isApproved: boolean;
   createdAt: Date | string;

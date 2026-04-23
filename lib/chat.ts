@@ -1,4 +1,9 @@
-import { ChannelType, Prisma, type MessageReaction } from "@prisma/client";
+// ChannelType is intentionally NOT imported from @prisma/client here.
+// This module is imported by ChatLayout (a "use client" component), so any
+// runtime @prisma/client import would bundle PrismaClient into the browser and
+// trigger its "cannot run in browser environment" guard. Use string literals
+// for channel type comparisons to keep this module client-safe.
+import type { Prisma, MessageReaction } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   CHAT_ALLOWED_EMOJIS,
@@ -136,7 +141,7 @@ export function groupReactions(
 type AccessResult = {
   channel: {
     id: string;
-    type: ChannelType;
+    type: string;
     isReadOnly: boolean;
     isArchived: boolean;
   };
@@ -205,7 +210,7 @@ export async function addUserToDefaultChatChannels(
 ): Promise<void> {
   const channels = await client.chatChannel.findMany({
     where: {
-      type: { in: [ChannelType.GROUP, ChannelType.ANNOUNCEMENT] },
+      type: { in: ["GROUP", "ANNOUNCEMENT"] as const },
       isArchived: false,
     },
     select: { id: true },
@@ -338,7 +343,7 @@ export function mapChannel(
 ): ChatChannelWithMeta {
   const lastMessage = channel.messages[0] ?? null;
   const dmUser =
-    channel.type === ChannelType.DM
+    channel.type === "DM"
       ? channel.members.find((member) => member.userId !== currentUserId)?.user ?? null
       : null;
   const displayName = dmUser?.name ?? channel.name;

@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getSignalTrackRecord } from "@/lib/signal-performance";
+import { getSignalTrackRecord } from "@/server/repositories/signal-repository";
 import { apiError } from "@/lib/utils";
 
 // AUDIT FIX: All authenticated API routes must opt out of static rendering

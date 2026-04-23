@@ -1,4 +1,4 @@
-﻿import { getSignalTrackRecord } from "@/lib/signal-performance";
+﻿import { getSignalTrackRecord } from "@/server/repositories/signal-repository";
 import { apiError } from "@/lib/utils";
 
 // Public endpoint — no authentication required.

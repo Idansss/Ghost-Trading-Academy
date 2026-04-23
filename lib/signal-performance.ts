@@ -1,6 +1,10 @@
 import type { Signal, SignalStatus } from "@prisma/client";
-import { subDays } from "date-fns";
-import { prisma } from "@/lib/prisma";
+
+// Do NOT import @/lib/prisma here — this module is imported by client
+// components (SignalCard, SignalFilters). Adding a Prisma import bundles
+// PrismaClient into the browser bundle, which throws at runtime.
+// Server-side callers (getSignalTrackRecord) have been moved to
+// server/repositories/signal-repository.ts instead.
 
 export const signalFilterStatuses = [
   "ALL",
@@ -174,41 +178,5 @@ export function buildSignalEquityCurve(signals: SignalTrackRecordRow[]) {
     });
 }
 
-export async function getSignalTrackRecord(range: "30d" | "90d" | "all" = "all") {
-  const since =
-    range === "30d" ? subDays(new Date(), 30) : range === "90d" ? subDays(new Date(), 90) : null;
-
-  const signals = await prisma.signal.findMany({
-    where: {
-      status: { in: settledSignalStatuses },
-      ...(since ? { closedAt: { gte: since } } : {}),
-    },
-    orderBy: { closedAt: "desc" },
-    select: {
-      id: true,
-      coin: true,
-      direction: true,
-      status: true,
-      tp1Hit: true,
-      tp2Hit: true,
-      tp3Hit: true,
-      stopHit: true,
-      finalPnlR: true,
-      closedAt: true,
-      postedAt: true,
-      entryZone: true,
-      stopLoss: true,
-      tp1: true,
-      tp2: true,
-      tp3: true,
-      rrRatio: true,
-      outcomeNote: true,
-    },
-  });
-
-  return {
-    stats: calculateSignalPerformanceStats(signals),
-    signals,
-    equityCurve: buildSignalEquityCurve(signals),
-  };
-}
+// getSignalTrackRecord has been moved to server/repositories/signal-repository.ts
+// to keep this module free of server-only dependencies.
