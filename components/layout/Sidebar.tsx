@@ -21,7 +21,6 @@ export function Sidebar({ user }: { user: Session["user"] }) {
   const [collapsed, setCollapsed] = useState(false);
   const AdminIcon = adminNav.icon;
   const displayName = user.name ?? "Member";
-  const displayEmail = user.email ?? "";
   const initials = displayName
     .split(" ")
     .slice(0, 2)
@@ -102,9 +101,6 @@ export function Sidebar({ user }: { user: Session["user"] }) {
           {!collapsed ? (
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">{displayName}</p>
-              <p className="truncate text-xs text-muted-foreground">
-                {displayEmail}
-              </p>
             </div>
           ) : null}
         </div>
