@@ -1,9 +1,9 @@
-import DOMPurify from "isomorphic-dompurify";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getChatChannelName, mapMessage, requireChannelAccess } from "@/lib/chat";
 import { pusherServer } from "@/lib/pusher";
 import { prisma } from "@/lib/prisma";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { editMessageSchema } from "@/lib/validations/chat";
 import type {
   ApiResponse,
@@ -68,7 +68,7 @@ export async function PATCH(
     const updatedMessage = await prisma.chatMessage.update({
       where: { id: messageId },
       data: {
-        body: DOMPurify.sanitize(parsed.data.body.trim()),
+        body: sanitizeHtml(parsed.data.body.trim()),
         isEdited: true,
         editedAt: new Date(),
       },

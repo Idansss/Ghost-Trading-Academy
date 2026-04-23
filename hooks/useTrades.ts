@@ -35,6 +35,8 @@ export function useTrades(searchParams: URLSearchParams | string) {
   const tradesQuery = useQuery({
     queryKey,
     queryFn: () => fetchJson<TradesResponse>(`/api/trades?${searchParams.toString()}`),
+    retry: 2,
+    staleTime: 1000 * 30,
   });
 
   const invalidate = async () => {

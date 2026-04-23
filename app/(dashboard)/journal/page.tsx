@@ -79,7 +79,7 @@ export default function JournalPage() {
     () => toSearchParams(selectedMonth, filters),
     [filters, selectedMonth],
   );
-  const { data, isLoading, error, refetch, createTrade } = useTrades(searchParams);
+  const { data, isLoading, isError, refetch, createTrade } = useTrades(searchParams);
   const filteredTrades = data?.trades ?? [];
   const kpiCards = data
     ? [
@@ -153,7 +153,7 @@ export default function JournalPage() {
 
       {isLoading ? (
         <JournalSkeleton />
-      ) : error || !data ? (
+      ) : isError ? (
         <ErrorState
           title="Journal unavailable"
           description="There was a problem loading your trades."
@@ -161,6 +161,8 @@ export default function JournalPage() {
             void refetch();
           }}
         />
+      ) : !data ? (
+        <JournalSkeleton />
       ) : (
         <>
           {!data.summary.loggedToday && data.summary.journalStreak > 2 ? (

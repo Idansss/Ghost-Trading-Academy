@@ -62,6 +62,13 @@ export default async function DashboardLayout({
         where: { userId: session.user.id },
         orderBy: { tradeDate: "desc" },
         take: 5,
+        select: {
+          id: true,
+          coin: true,
+          direction: true,
+          outcome: true,
+          setupType: true,
+        },
       }),
       prisma.announcement.findMany({
         orderBy: { createdAt: "desc" },

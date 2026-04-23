@@ -1,4 +1,3 @@
-import DOMPurify from "isomorphic-dompurify";
 import { AppError } from "@/server/core/app-error";
 
 const trustedImageHosts = new Set([
@@ -6,10 +5,25 @@ const trustedImageHosts = new Set([
   "uploadthing.com",
 ]);
 
+function stripMarkup(value: string) {
+  return value
+    .replace(/<\s*br\s*\/?\s*>/gi, "\n")
+    .replace(/<\s*\/\s*(p|div|li|h[1-6])\s*>/gi, "\n")
+    .replace(/<\s*li\b[^>]*>/gi, "- ")
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/\r\n/g, "\n")
+    .replace(/\u0000/g, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export function sanitizeHtml(value: string) {
-  return DOMPurify.sanitize(value, {
-    USE_PROFILES: { html: true },
-  });
+  // Server routes render these fields back as plain text, not injected HTML.
+  // Keep a lightweight text sanitizer here to avoid DOM-based server deps.
+  return stripMarkup(value);
 }
 
 export function assertTrustedImageUrl(url: string | null | undefined) {
