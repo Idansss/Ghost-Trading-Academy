@@ -7,6 +7,7 @@ import {
 } from "@/lib/actions/notifications";
 import { prisma } from "@/lib/prisma";
 import { apiError, safeJson } from "@/lib/utils";
+import { optionalPrismaQuery } from "@/server/core/prisma-schema";
 
 // AUDIT FIX: All authenticated API routes must opt out of static rendering
 export const dynamic = "force-dynamic";
@@ -18,23 +19,39 @@ export async function GET(request: Request) {
     const mode = searchParams.get("mode");
 
     if (mode === "count") {
-      const unreadCount = await getUnreadCount(user.id);
-      const dmMemberships = await prisma.channelMember.findMany({
-        where: { userId: user.id, channel: { type: "DM" } },
-        select: { channelId: true, lastReadAt: true },
-      });
-      const unreadDmCounts = await Promise.all(
-        dmMemberships.map((membership) =>
-          prisma.chatMessage.count({
-            where: {
-              channelId: membership.channelId,
-              authorId: { not: user.id },
-              createdAt: { gt: membership.lastReadAt },
-              deletedAt: null,
-            },
-          }),
-        ),
+      const unreadCount = await optionalPrismaQuery(
+        "notifications_unread_count",
+        () => getUnreadCount(user.id),
+        0,
       );
+      const dmMemberships = await optionalPrismaQuery(
+        "notifications_dm_memberships",
+        () =>
+          prisma.channelMember.findMany({
+            where: { userId: user.id, channel: { type: "DM" } },
+            select: { channelId: true, lastReadAt: true },
+          }),
+        [] as Array<{ channelId: string; lastReadAt: Date }>,
+      );
+      const unreadDmCounts = dmMemberships.length
+        ? await optionalPrismaQuery(
+            "notifications_unread_dm_counts",
+            () =>
+              Promise.all(
+                dmMemberships.map((membership) =>
+                  prisma.chatMessage.count({
+                    where: {
+                      channelId: membership.channelId,
+                      authorId: { not: user.id },
+                      createdAt: { gt: membership.lastReadAt },
+                      deletedAt: null,
+                    },
+                  }),
+                ),
+              ),
+            [],
+          )
+        : [];
       const unreadDmCount = unreadDmCounts.reduce((sum, value) => sum + value, 0);
       return Response.json({ unreadCount: unreadCount + unreadDmCount });
     }
@@ -50,8 +67,21 @@ export async function GET(request: Request) {
         | null) ?? "ALL";
 
     const [notificationResult, unreadCount] = await Promise.all([
-      getNotifications(user.id, { page, filter }),
-      getUnreadCount(user.id),
+      optionalPrismaQuery(
+        "notifications_list",
+        () => getNotifications(user.id, { page, filter }),
+        {
+          notifications: [],
+          total: 0,
+          page,
+          totalPages: 1,
+        },
+      ),
+      optionalPrismaQuery(
+        "notifications_page_unread_count",
+        () => getUnreadCount(user.id),
+        0,
+      ),
     ]);
 
     return Response.json({

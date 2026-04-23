@@ -1,4 +1,4 @@
-import { ChannelType } from "@prisma/client";
+import { ChannelType, Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import {
@@ -9,6 +9,7 @@ import {
 import { pusherServer } from "@/lib/pusher";
 import { prisma } from "@/lib/prisma";
 import { createChannelSchema } from "@/lib/validations/chat";
+import { optionalPrismaQuery } from "@/server/core/prisma-schema";
 import type { ApiResponse, ChatChannelWithMeta } from "@/types/chat";
 
 // AUDIT FIX: All authenticated API routes must opt out of static rendering
@@ -16,6 +17,34 @@ export const dynamic = "force-dynamic";
 
 // AUDIT FIX: ChannelWithActivity type is no longer needed; activityDate is now
 // computed inline during sort so the response type stays ChatChannelWithMeta[].
+
+type ChatChannelWithRelations = Prisma.ChatChannelGetPayload<{
+  include: {
+    _count: { select: { members: true } };
+    members: {
+      include: {
+        user: {
+          select: {
+            id: true;
+            name: true;
+            avatarUrl: true;
+          };
+        };
+      };
+    };
+    messages: {
+      orderBy: { createdAt: "desc" };
+      take: 1;
+      include: {
+        author: {
+          select: {
+            name: true;
+          };
+        };
+      };
+    };
+  };
+}>;
 
 
 // AUDIT FIX: Added consistent { data } success envelopes, strict auth checks,
@@ -29,46 +58,51 @@ export async function GET(): Promise<NextResponse<ApiResponse<ChatChannelWithMet
     }
 
     const userId = session.user.id;
-    const channels = await prisma.chatChannel.findMany({
-      where: {
-        isArchived: false,
-        OR: [
-          {
-            type: { in: [ChannelType.GROUP, ChannelType.ANNOUNCEMENT] },
-            members: { some: { userId } },
+    const channels = await optionalPrismaQuery<ChatChannelWithRelations[]>(
+      "chat_channels_api_list",
+      () =>
+        prisma.chatChannel.findMany({
+          where: {
+            isArchived: false,
+            OR: [
+              {
+                type: { in: [ChannelType.GROUP, ChannelType.ANNOUNCEMENT] },
+                members: { some: { userId } },
+              },
+              {
+                type: ChannelType.DM,
+                members: { some: { userId } },
+              },
+            ],
           },
-          {
-            type: ChannelType.DM,
-            members: { some: { userId } },
-          },
-        ],
-      },
-      include: {
-        _count: { select: { members: true } },
-        members: {
           include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                avatarUrl: true,
+            _count: { select: { members: true } },
+            members: {
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    avatarUrl: true,
+                  },
+                },
+              },
+            },
+            messages: {
+              orderBy: { createdAt: "desc" },
+              take: 1,
+              include: {
+                author: {
+                  select: {
+                    name: true,
+                  },
+                },
               },
             },
           },
-        },
-        messages: {
-          orderBy: { createdAt: "desc" },
-          take: 1,
-          include: {
-            author: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
+        }),
+      [],
+    );
 
     // AUDIT FIX: Previous code fired N separate prisma.chatMessage.count() calls
     // in Promise.all — one query per channel. Replaced with a single aggregating
@@ -79,18 +113,23 @@ export async function GET(): Promise<NextResponse<ApiResponse<ChatChannelWithMet
 
     type UnreadRow = { channel_id: string; count: bigint };
     const unreadRows = channelIds.length > 0
-      ? await prisma.$queryRaw<UnreadRow[]>`
-          SELECT cm."channelId" AS channel_id, COUNT(msg.id)::bigint AS count
-          FROM "ChannelMember" cm
-          LEFT JOIN "ChatMessage" msg
-            ON msg."channelId" = cm."channelId"
-            AND msg."authorId" != ${userId}
-            AND msg."createdAt" > cm."lastReadAt"
-            AND msg."deletedAt" IS NULL
-          WHERE cm."userId" = ${userId}
-            AND cm."channelId" = ANY(${channelIds}::text[])
-          GROUP BY cm."channelId"
-        `
+      ? await optionalPrismaQuery<UnreadRow[]>(
+          "chat_channels_api_unread_counts",
+          () =>
+            prisma.$queryRaw<UnreadRow[]>`
+              SELECT cm."channelId" AS channel_id, COUNT(msg.id)::bigint AS count
+              FROM "ChannelMember" cm
+              LEFT JOIN "ChatMessage" msg
+                ON msg."channelId" = cm."channelId"
+                AND msg."authorId" != ${userId}
+                AND msg."createdAt" > cm."lastReadAt"
+                AND msg."deletedAt" IS NULL
+              WHERE cm."userId" = ${userId}
+                AND cm."channelId" = ANY(${channelIds}::text[])
+              GROUP BY cm."channelId"
+            `,
+          [],
+        )
       : [];
 
     const unreadMap = new Map<string, number>(

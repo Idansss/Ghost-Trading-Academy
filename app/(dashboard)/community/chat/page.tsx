@@ -5,6 +5,35 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { requireUser } from "@/lib/auth";
 import { mapChannel } from "@/lib/chat";
 import { prisma } from "@/lib/prisma";
+import { optionalPrismaQuery } from "@/server/core/prisma-schema";
+
+type ChatChannelWithRelations = Prisma.ChatChannelGetPayload<{
+  include: {
+    _count: { select: { members: true } };
+    members: {
+      include: {
+        user: {
+          select: {
+            id: true;
+            name: true;
+            avatarUrl: true;
+          };
+        };
+      };
+    };
+    messages: {
+      orderBy: { createdAt: "desc" };
+      take: 1;
+      include: {
+        author: {
+          select: {
+            name: true;
+          };
+        };
+      };
+    };
+  };
+}>;
 
 export default async function CommunityChatPage({
   searchParams,
@@ -14,65 +43,75 @@ export default async function CommunityChatPage({
   const user = await requireUser();
   const params = await searchParams;
 
-  const channels = await prisma.chatChannel.findMany({
-    where: {
-      isArchived: false,
-      OR: [
-        {
-          type: { in: ["GROUP", "ANNOUNCEMENT"] },
-          members: { some: { userId: user.id } },
+  const channels = await optionalPrismaQuery<ChatChannelWithRelations[]>(
+    "community_chat_page_channels",
+    () =>
+      prisma.chatChannel.findMany({
+        where: {
+          isArchived: false,
+          OR: [
+            {
+              type: { in: ["GROUP", "ANNOUNCEMENT"] },
+              members: { some: { userId: user.id } },
+            },
+            {
+              type: "DM",
+              members: { some: { userId: user.id } },
+            },
+          ],
         },
-        {
-          type: "DM",
-          members: { some: { userId: user.id } },
-        },
-      ],
-    },
-    include: {
-      _count: { select: { members: true } },
-      members: {
         include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              avatarUrl: true,
+          _count: { select: { members: true } },
+          members: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  name: true,
+                  avatarUrl: true,
+                },
+              },
+            },
+          },
+          messages: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            include: {
+              author: {
+                select: {
+                  name: true,
+                },
+              },
             },
           },
         },
-      },
-      messages: {
-        orderBy: { createdAt: "desc" },
-        take: 1,
-        include: {
-          author: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-    },
-  });
+      }),
+    [],
+  );
 
   // Compute unread counts in a single aggregation query instead of N+1.
   // Prisma.join() produces safe $1, $2, ... placeholders for the IN list.
   const channelIds = channels.map((ch) => ch.id);
   type UnreadRow = { channel_id: string; count: bigint };
   const unreadRows: UnreadRow[] = channelIds.length > 0
-    ? await prisma.$queryRaw<UnreadRow[]>(
-        Prisma.sql`
-          SELECT cm."channelId" AS channel_id, COUNT(msg.id)::bigint AS count
-          FROM "ChannelMember" cm
-          LEFT JOIN "ChatMessage" msg
-            ON msg."channelId" = cm."channelId"
-            AND msg."authorId" != ${user.id}
-            AND msg."createdAt" > cm."lastReadAt"
-            AND msg."deletedAt" IS NULL
-          WHERE cm."userId" = ${user.id}
-            AND cm."channelId" IN (${Prisma.join(channelIds)})
-          GROUP BY cm."channelId"
-        `,
+    ? await optionalPrismaQuery<UnreadRow[]>(
+        "community_chat_page_unread_counts",
+        () =>
+          prisma.$queryRaw<UnreadRow[]>(
+            Prisma.sql`
+              SELECT cm."channelId" AS channel_id, COUNT(msg.id)::bigint AS count
+              FROM "ChannelMember" cm
+              LEFT JOIN "ChatMessage" msg
+                ON msg."channelId" = cm."channelId"
+                AND msg."authorId" != ${user.id}
+                AND msg."createdAt" > cm."lastReadAt"
+                AND msg."deletedAt" IS NULL
+              WHERE cm."userId" = ${user.id}
+                AND cm."channelId" IN (${Prisma.join(channelIds)})
+              GROUP BY cm."channelId"
+            `,
+          ),
+        [],
       )
     : [];
 

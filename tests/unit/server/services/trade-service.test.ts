@@ -1,6 +1,7 @@
 // AUDIT FIX: TradeService had zero unit tests. Added full coverage including the
 // happy path, password-level check (raw input not stored), and error cases.
 import { describe, expect, it, vi } from "vitest";
+import { Prisma } from "@prisma/client";
 import { TradeService } from "@/server/services/trade-service";
 import type { TradeRepository } from "@/server/repositories/trade-repository";
 
@@ -181,5 +182,35 @@ describe("TradeService.listTrades", () => {
     expect(result.summary.totalPnl).toBe(0);
     expect(result.summary.winRate).toBe(0);
     expect(result.summary.avgRR).toBe(0);
+  });
+
+  it("falls back when optional journal summary columns are missing", async () => {
+    const trade = makeTrade({ pnlPercent: 2.5, outcome: "WIN", rrRatio: 2.0 });
+    const missingColumnError = new Prisma.PrismaClientKnownRequestError(
+      "The column does not exist on the current database schema.",
+      {
+        code: "P2022",
+        clientVersion: "test",
+      },
+    );
+    const service = new TradeService(
+      makeDeps({
+        list: vi.fn().mockResolvedValue({
+          data: [trade],
+          hasNext: false,
+          nextCursor: null,
+        }),
+        listAll: vi.fn().mockResolvedValue([trade]),
+        findUserSummary: vi.fn().mockRejectedValue(missingColumnError),
+      }),
+    );
+
+    const result = await service.listTrades("user-1", {});
+
+    expect(result.trades).toHaveLength(1);
+    expect(result.summary.journalStreak).toBe(0);
+    expect(result.summary.longestStreak).toBe(0);
+    expect(result.summary.disciplineScore).toBe(0);
+    expect(result.summary.loggedToday).toBe(false);
   });
 });

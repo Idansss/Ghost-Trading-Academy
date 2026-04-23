@@ -11,6 +11,7 @@ import { auth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { prisma } from "@/lib/prisma";
 import { getSiteConfig } from "@/lib/site-config";
+import { optionalPrismaQuery } from "@/server/core/prisma-schema";
 
 export default async function DashboardLayout({
   children,
@@ -23,12 +24,17 @@ export default async function DashboardLayout({
     redirect("/auth/login");
   }
 
-  const unreadCount = await prisma.notification.count({
-    where: {
-      userId: session.user.id,
-      isRead: false,
-    },
-  });
+  const unreadCount = await optionalPrismaQuery(
+    "dashboard_layout_notification_count",
+    () =>
+      prisma.notification.count({
+        where: {
+          userId: session.user.id,
+          isRead: false,
+        },
+      }),
+    0,
+  );
   const siteConfig = await getSiteConfig();
   if (siteConfig.maintenanceMode && session.user.role !== "ADMIN") {
     return (

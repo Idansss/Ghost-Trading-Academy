@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Topbar } from "@/components/layout/Topbar";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { optionalPrismaQuery } from "@/server/core/prisma-schema";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -25,12 +26,17 @@ export default async function AdminLayout({
     redirect("/dashboard");
   }
 
-  const unreadCount = await prisma.notification.count({
-    where: {
-      userId: session.user.id,
-      isRead: false,
-    },
-  });
+  const unreadCount = await optionalPrismaQuery(
+    "admin_layout_notification_count",
+    () =>
+      prisma.notification.count({
+        where: {
+          userId: session.user.id,
+          isRead: false,
+        },
+      }),
+    0,
+  );
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">

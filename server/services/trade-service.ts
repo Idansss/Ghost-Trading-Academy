@@ -1,6 +1,7 @@
 // AUDIT FIX: Business logic for trades was embedded directly in the route handler.
 // Moved to this service so controllers stay thin and logic is independently testable.
 import { isSameDay } from "date-fns";
+import { Prisma } from "@prisma/client";
 import type { Direction, TradeOutcome } from "@prisma/client";
 import {
   calculateAvgRR,
@@ -16,6 +17,7 @@ import { assertTrustedImageUrl } from "@/lib/sanitize";
 import { logUserActivity } from "@/lib/activity";
 import { recalculateUserStreak } from "@/lib/streak";
 import { getMonthKey } from "@/lib/utils";
+import logger from "@/server/core/logger";
 import {
   type TradeListFilters,
   type TradeRepository,
@@ -28,6 +30,45 @@ type TradeServiceDependencies = {
   recalculateStreak: typeof recalculateUserStreak;
   logActivity: typeof logUserActivity;
 };
+
+type TradeUserSummary = Awaited<
+  ReturnType<TradeRepository["findUserSummary"]>
+>;
+
+const tradeSummaryFallback: NonNullable<TradeUserSummary> = {
+  journalStreak: 0,
+  longestStreak: 0,
+  disciplineScore: 0,
+  lastJournalDate: null,
+};
+
+function isOptionalTradeSummarySchemaError(
+  error: unknown,
+): error is Prisma.PrismaClientKnownRequestError {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    (error.code === "P2021" || error.code === "P2022")
+  );
+}
+
+async function getOptionalTradeSummary(
+  run: () => Promise<TradeUserSummary>,
+): Promise<TradeUserSummary> {
+  try {
+    return await run();
+  } catch (error) {
+    if (isOptionalTradeSummarySchemaError(error)) {
+      logger.warn({
+        type: "trade_summary_optional_schema_fallback",
+        code: error.code,
+        message: error.message,
+      });
+      return tradeSummaryFallback;
+    }
+
+    throw error;
+  }
+}
 
 export type TradeCreatePayload = {
   coin: string;
@@ -64,13 +105,18 @@ export class TradeService {
     userId: string,
     filters: TradeListFilters & { cursor?: string; limit?: number },
   ) {
-    const { data: trades, hasNext, nextCursor } = await this.deps.trades.list({
-      userId,
-      ...filters,
-    });
-
-    const allTrades = await this.deps.trades.listAll(userId);
-    const userSummary = await this.deps.trades.findUserSummary(userId);
+    const [
+      { data: trades, hasNext, nextCursor },
+      allTrades,
+      userSummary,
+    ] = await Promise.all([
+      this.deps.trades.list({
+        userId,
+        ...filters,
+      }),
+      this.deps.trades.listAll(userId),
+      getOptionalTradeSummary(() => this.deps.trades.findUserSummary(userId)),
+    ]);
 
     const tradingDays = new Set(
       trades.map((t) => new Date(t.tradeDate).toDateString()),
