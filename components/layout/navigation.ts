@@ -21,6 +21,7 @@ export type NavigationItem = {
   href: string;
   label: string;
   icon: LucideIcon;
+  match?: "exact" | "prefix";
 };
 
 export const primaryNav: NavigationItem[] = [
@@ -31,10 +32,10 @@ export const primaryNav: NavigationItem[] = [
   { href: "/analytics", label: "Analytics", icon: BarChart3 },
   { href: "/education", label: "Education", icon: GraduationCap },
   { href: "/calculator", label: "Calculator", icon: Calculator },
-  { href: "/community", label: "Community", icon: Users },
-  { href: "/community/chat", label: "Chat", icon: MessageSquare },
+  { href: "/community", label: "Community", icon: Users, match: "exact" },
+  { href: "/community/chat", label: "Chat", icon: MessageSquare, match: "prefix" },
   { href: "/watchlist", label: "Watchlist", icon: LineChart },
-  { href: "/community/leaderboard", label: "Leaderboard", icon: BarChart3 },
+  { href: "/community/leaderboard", label: "Leaderboard", icon: BarChart3, match: "prefix" },
 ];
 
 export const adminNav: NavigationItem = {
@@ -62,6 +63,14 @@ export const adminSubNav: NavigationItem[] = [
   { href: "/admin/reports", label: "Reports", icon: Send },
 ];
 
-export function isPathActive(pathname: string, href: string) {
+export function isPathActive(
+  pathname: string,
+  href: string,
+  match: NavigationItem["match"] = "prefix",
+) {
+  if (match === "exact") {
+    return pathname === href;
+  }
+
   return pathname === href || pathname.startsWith(`${href}/`);
 }

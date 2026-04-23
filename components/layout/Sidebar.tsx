@@ -45,7 +45,7 @@ export function Sidebar({ user }: { user: Session["user"] }) {
 
       <nav className="mt-8 flex-1 space-y-2">
         {primaryNav.map((item) => {
-          const active = isPathActive(pathname, item.href);
+          const active = isPathActive(pathname, item.href, item.match);
           const Icon = item.icon;
 
           return (

@@ -67,7 +67,7 @@ export function MobileHeader({
             <nav className="space-y-2">
               {navItems.map((item) => {
                 const Icon = item.icon;
-                const active = isPathActive(pathname, item.href);
+                const active = isPathActive(pathname, item.href, item.match);
 
                 return (
                   <SheetClose asChild key={item.href}>

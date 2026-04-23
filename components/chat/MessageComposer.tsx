@@ -267,7 +267,7 @@ export function MessageComposer({
             }
           }}
           rows={1}
-          className="min-h-[44px] max-h-[140px] resize-none"
+          className="min-h-[44px] max-h-[140px] resize-none overflow-y-auto scrollbar-none"
           placeholder={`Message #${channelName}`}
         />
 
