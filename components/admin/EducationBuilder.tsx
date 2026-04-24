@@ -2,8 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { BookOpen, ExternalLink, FileText, Plus, Save, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import { PdfUploadButton } from "@/components/admin/PdfUploadButton";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -16,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchJson } from "@/lib/client-api";
+import { objectPathFromSupabasePublicUrl } from "@/lib/storage/upload-client";
 
 type UploadedPdf = {
   url: string;
@@ -40,6 +42,8 @@ type AdminEducationData = {
     id: string;
     title: string;
     description: string;
+    coverImage: string | null;
+    handoutPdfUrl: string | null;
     isPublished: boolean;
     order: number;
     modules: Array<{
@@ -53,6 +57,21 @@ type AdminEducationData = {
 };
 
 const resourceTags = ["Foundation", "Strategy", "Psychology", "Risk", "Recap"] as const;
+
+function pdfDraftFromUrl(url: string | null | undefined): UploadedPdf | null {
+  if (!url?.trim()) {
+    return null;
+  }
+  try {
+    return {
+      url,
+      key: objectPathFromSupabasePublicUrl(url),
+      name: "Course handout.pdf",
+    };
+  } catch {
+    return { url, key: "", name: "Course handout.pdf" };
+  }
+}
 
 function CourseEditor({
   course,
@@ -76,6 +95,8 @@ function CourseEditor({
     id: string;
     title: string;
     description: string;
+    coverImage: string | null;
+    handoutPdfUrl: string | null;
     isPublished: boolean;
   }) => void;
   onDelete: (courseId: string) => void;
@@ -102,6 +123,25 @@ function CourseEditor({
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description);
   const [isPublished, setIsPublished] = useState(course.isPublished);
+  const [coverImageUrl, setCoverImageUrl] = useState<string | null>(course.coverImage);
+  const [handoutPdf, setHandoutPdf] = useState<UploadedPdf | null>(() =>
+    pdfDraftFromUrl(course.handoutPdfUrl),
+  );
+
+  useEffect(() => {
+    setTitle(course.title);
+    setDescription(course.description);
+    setIsPublished(course.isPublished);
+    setCoverImageUrl(course.coverImage);
+    setHandoutPdf(pdfDraftFromUrl(course.handoutPdfUrl));
+  }, [
+    course.id,
+    course.title,
+    course.description,
+    course.isPublished,
+    course.coverImage,
+    course.handoutPdfUrl,
+  ]);
 
   return (
     <Card>
@@ -168,6 +208,31 @@ function CourseEditor({
           />
         </div>
 
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-2">
+            <Label>Course cover (optional)</Label>
+            <ImageUploadField
+              imageUrl={coverImageUrl}
+              onUpload={(url) => setCoverImageUrl(url)}
+              onRemove={() => setCoverImageUrl(null)}
+              title="Course cover image"
+              description="JPEG, PNG, or WebP. Appears on the course card for members."
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Course PDF (optional)</Label>
+            <p className="text-xs text-muted-foreground">
+              One file for the whole course (for example a syllabus). Lesson PDFs still go under each
+              module.
+            </p>
+            <PdfUploadButton
+              value={handoutPdf}
+              onUpload={(url, key, name) => setHandoutPdf({ url, key, name })}
+              onClear={() => setHandoutPdf(null)}
+            />
+          </div>
+        </div>
+
         <div className="flex justify-end">
           <Button
             onClick={() =>
@@ -175,6 +240,8 @@ function CourseEditor({
                 id: course.id,
                 title,
                 description,
+                coverImage: coverImageUrl,
+                handoutPdfUrl: handoutPdf?.url ?? null,
                 isPublished,
               })
             }
@@ -459,10 +526,13 @@ export function EducationBuilder() {
   const queryClient = useQueryClient();
   const [courseTitle, setCourseTitle] = useState("");
   const [courseDescription, setCourseDescription] = useState("");
+  const [newCoverImageUrl, setNewCoverImageUrl] = useState<string | null>(null);
+  const [newHandoutPdf, setNewHandoutPdf] = useState<UploadedPdf | null>(null);
 
   const query = useQuery({
     queryKey: ["admin-education"],
-    queryFn: () => fetchJson<AdminEducationData>("/api/admin/education/courses"),
+    queryFn: () =>
+      fetchJson<AdminEducationData & { resources?: unknown }>("/api/admin/education/courses"),
   });
 
   const invalidate = async () => {
@@ -491,6 +561,8 @@ export function EducationBuilder() {
       id: string;
       title: string;
       description: string;
+      coverImage: string | null;
+      handoutPdfUrl: string | null;
       isPublished: boolean;
     }) =>
       fetchJson(`/api/admin/education/courses/${payload.id}`, {
@@ -498,6 +570,8 @@ export function EducationBuilder() {
         body: JSON.stringify({
           title: payload.title,
           description: payload.description,
+          coverImage: payload.coverImage,
+          handoutPdfUrl: payload.handoutPdfUrl,
           isPublished: payload.isPublished,
         }),
       }),
@@ -634,6 +708,30 @@ export function EducationBuilder() {
                 placeholder="What members will learn in this course."
                 value={courseDescription}
                 onChange={(event) => setCourseDescription(event.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Course cover (optional)</Label>
+              <ImageUploadField
+                imageUrl={newCoverImageUrl}
+                onUpload={(url) => setNewCoverImageUrl(url)}
+                onRemove={() => setNewCoverImageUrl(null)}
+                title="Course cover image"
+                description="JPEG, PNG, or WebP."
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Course PDF (optional)</Label>
+              <p className="text-xs text-muted-foreground">
+                Attach a syllabus or reference PDF for the whole course. You can add more PDFs per
+                module below after the course exists.
+              </p>
+              <PdfUploadButton
+                value={newHandoutPdf}
+                onUpload={(url, key, name) => setNewHandoutPdf({ url, key, name })}
+                onClear={() => setNewHandoutPdf(null)}
               />
             </div>
           </div>

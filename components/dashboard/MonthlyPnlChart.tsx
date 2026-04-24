@@ -22,7 +22,7 @@ export function MonthlyPnlChart({
       <CardHeader>
         <CardTitle>Monthly P&amp;L</CardTitle>
       </CardHeader>
-      <CardContent className="h-[260px]">
+      <CardContent className="h-[220px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data}>
             <CartesianGrid strokeDasharray="3 3" strokeOpacity={0.15} />

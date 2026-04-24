@@ -67,11 +67,11 @@ export function GlobalSearch({ items }: { items: GlobalSearchItem[] }) {
         <button
           type="button"
           aria-label="Open global search"
-          className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card px-4 py-2.5 text-left text-sm text-muted-foreground transition hover:border-primary/30 hover:bg-accent/50"
+          className="flex h-9 w-full items-center gap-2.5 rounded-xl border border-border bg-card px-3 text-left text-[13px] text-muted-foreground transition hover:border-primary/30 hover:bg-accent/50"
         >
-          <Search className="h-4 w-4 shrink-0" />
+          <Search className="h-3.5 w-3.5 shrink-0" />
           <span className="truncate">Search pages, trades, signals, resources...</span>
-          <span className="ml-auto hidden rounded-lg border border-border px-2 py-1 text-[11px] uppercase tracking-[0.18em] sm:inline-flex">
+          <span className="ml-auto hidden rounded-md border border-border px-1.5 py-0.5 text-[10px] uppercase tracking-[0.14em] sm:inline-flex">
             Ctrl K
           </span>
         </button>

@@ -43,10 +43,10 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
     return unique.length ? unique : [...DEFAULT_TICKER_SYMBOLS];
   }, [symbols]);
   const [prices, setPrices] = useState<Record<string, TickerItem>>({});
-  // AUDIT FIX: Added "disconnected" as a valid state for when max retries are exceeded.
   const [connectionState, setConnectionState] = useState<
     "connecting" | "connected" | "reconnecting" | "disconnected"
   >("connecting");
+  const [showConnectionBadge, setShowConnectionBadge] = useState(false);
   const retryTimeoutRef = useRef<number | null>(null);
   const websocketRef = useRef<WebSocket | null>(null);
 
@@ -75,26 +75,26 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
       >;
 
       return normalizedSymbols.reduce<TickerItem[]>((accumulator, symbol) => {
-          const meta = symbolMeta.get(symbol);
-          if (!meta) {
-            return accumulator;
-          }
-
-          const priceData = payload[meta.coingeckoId];
-          if (!priceData?.usd) {
-            return accumulator;
-          }
-
-          accumulator.push({
-            symbol,
-            label: meta.label,
-            price: priceData.usd,
-            changePercent: Number(priceData.usd_24h_change ?? 0),
-            source: "fallback" as const,
-          });
-
+        const meta = symbolMeta.get(symbol);
+        if (!meta) {
           return accumulator;
-        }, []);
+        }
+
+        const priceData = payload[meta.coingeckoId];
+        if (!priceData?.usd) {
+          return accumulator;
+        }
+
+        accumulator.push({
+          symbol,
+          label: meta.label,
+          price: priceData.usd,
+          changePercent: Number(priceData.usd_24h_change ?? 0),
+          source: "fallback" as const,
+        });
+
+        return accumulator;
+      }, []);
     },
     enabled: connectionState !== "connected",
     refetchInterval: connectionState !== "connected" ? 30_000 : false,
@@ -116,13 +116,32 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
   }, [fallbackQuery.data, connectionState]);
 
   useEffect(() => {
+    let timer: number | null = null;
+
+    setShowConnectionBadge(false);
+
+    if (connectionState === "disconnected") {
+      setShowConnectionBadge(true);
+      return;
+    }
+
+    if (connectionState === "reconnecting") {
+      timer = window.setTimeout(() => setShowConnectionBadge(true), 3000);
+    }
+
+    return () => {
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [connectionState]);
+
+  useEffect(() => {
     if (!normalizedSymbols.length) {
       return;
     }
 
     let disposed = false;
-    // AUDIT FIX: No reconnection limit meant the ticker would loop forever on
-    // permanent network failure. Cap at 10 attempts, then show disconnected state.
     let retryCount = 0;
     const MAX_RETRIES = 10;
 
@@ -187,7 +206,6 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
           return;
         }
 
-        // AUDIT FIX: Enforce the max retry cap before scheduling the next attempt.
         if (retryCount >= MAX_RETRIES) {
           setConnectionState("disconnected");
           return;
@@ -226,29 +244,30 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
   });
 
   return (
-    <div className="sticky top-16 z-20 border-b border-border bg-background/95 backdrop-blur md:top-20">
-      {/* flex-nowrap + overflow-x-auto on mobile so nothing is ever clipped;
-          on sm+ the cards stretch to fill the full bar width via flex-1 */}
-      <div className="flex items-center gap-2 overflow-x-auto px-4 py-2 sm:gap-3 sm:px-6 lg:px-8">
+    <div className="sticky top-16 z-20 border-b border-border bg-background/95 backdrop-blur md:top-[4.5rem]">
+      <div className="flex items-center gap-1.5 overflow-x-auto px-3 py-1.5 sm:gap-2 sm:px-4 lg:px-5">
         {orderedItems.map((item) => {
           const positive = item.changePercent >= 0;
 
           return (
             <div
               key={item.symbol}
-              className="flex min-w-[120px] flex-1 items-center justify-between gap-2 rounded-2xl border border-border bg-card px-3 py-2"
+              className="flex min-w-[108px] flex-1 items-center justify-between gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1.5 sm:min-w-[112px]"
             >
               <div className="min-w-0">
-                <p className="truncate text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                <p
+                  className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                  title={item.label}
+                >
                   {item.label}
                 </p>
-                <p className="mt-1 text-sm font-semibold" data-number="true">
+                <p className="mt-0.5 text-sm font-semibold tabular-nums" data-number="true">
                   {item.price ? `$${formatPrice(item.price)}` : "--"}
                 </p>
               </div>
               <div
                 className={cn(
-                  "flex shrink-0 items-center gap-1 text-sm font-medium",
+                  "flex shrink-0 items-center gap-1 text-xs font-semibold tabular-nums",
                   positive
                     ? "text-[color:var(--color-green)]"
                     : "text-[color:var(--color-red)]",
@@ -256,9 +275,9 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
                 data-number="true"
               >
                 {positive ? (
-                  <ArrowUpRight className="h-4 w-4" />
+                  <ArrowUpRight className="h-3.5 w-3.5 flex-shrink-0" />
                 ) : (
-                  <ArrowDownRight className="h-4 w-4" />
+                  <ArrowDownRight className="h-3.5 w-3.5 flex-shrink-0" />
                 )}
                 {item.changePercent.toFixed(2)}%
               </div>
@@ -266,14 +285,10 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
           );
         })}
 
-        {connectionState !== "connected" ? (
-          <div className="flex shrink-0 items-center gap-2 rounded-2xl border border-border bg-card px-3 py-2 text-xs text-muted-foreground">
+        {showConnectionBadge ? (
+          <div className="flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1.5 text-[11px] text-muted-foreground">
             <WifiOff className="h-3.5 w-3.5" />
-            <span>
-              {fallbackQuery.isFetching
-                ? "Reconnecting… using fallback"
-                : "Reconnecting…"}
-            </span>
+            <span>{fallbackQuery.isFetching ? "Reconnecting... using fallback" : "Reconnecting..."}</span>
           </div>
         ) : null}
       </div>

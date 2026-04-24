@@ -1,7 +1,7 @@
 import type { SignalStatus } from "@prisma/client";
 import { mapMessage } from "@/lib/chat";
 import { logUserActivity } from "@/lib/activity";
-import { pusherServer } from "@/lib/pusher";
+import { realtimePublisher } from "@/lib/realtime";
 import { assertTrustedImageUrl, sanitizeHtml } from "@/lib/sanitize";
 import {
   dispatchPublishedSignalAlerts,
@@ -23,10 +23,14 @@ const closedSignalStatuses = new Set<SignalStatus>([
   "CLOSED",
 ]);
 
+type RealtimePublisherLike = {
+  trigger: (channel: string, event: string, data: unknown) => Promise<void>;
+} | null;
+
 type SignalServiceDependencies = {
   notifyPublishedSignal: typeof dispatchPublishedSignalAlerts;
   notifySignalOutcome: typeof dispatchSignalOutcomeAlerts;
-  publishRealtimeMessage: typeof pusherServer;
+  publishRealtimeMessage: RealtimePublisherLike;
   signals: SignalRepository;
 };
 
@@ -268,6 +272,6 @@ export class SignalService {
 export const signalService = new SignalService({
   notifyPublishedSignal: dispatchPublishedSignalAlerts,
   notifySignalOutcome: dispatchSignalOutcomeAlerts,
-  publishRealtimeMessage: pusherServer,
+  publishRealtimeMessage: realtimePublisher,
   signals: signalRepository,
 });

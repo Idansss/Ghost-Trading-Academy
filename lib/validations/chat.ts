@@ -23,7 +23,8 @@ export const sendMessageSchema = z
     imageWidth: z.number().int().positive().optional().nullable(),
     imageHeight: z.number().int().positive().optional().nullable(),
     imageName: z.string().max(255).optional().nullable(),
-    replyToId: z.string().cuid().optional().nullable(),
+    // Allow any non-empty id: Prisma uses cuid(), optimistic UI may use UUID until ACK.
+    replyToId: z.string().min(1).max(64).optional().nullable(),
   })
   .refine((value) => Boolean(value.body?.trim() || value.imageUrl), {
     message: "Either message body or imageUrl is required.",

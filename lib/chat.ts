@@ -15,10 +15,10 @@ import {
 } from "@/types/chat";
 
 // AUDIT FIX: Centralized chat channel/event naming to eliminate server/client
-// mismatches and prevent silent realtime failures.
+// mismatches and prevent silent realtime failures (Supabase Realtime broadcast).
 export const CHAT_EVENTS_CHANNEL = "admin-chat";
 // AUDIT FIX: ADMIN_CHAT_CHANNEL was referenced in channels/route.ts but missing.
-// Alias to CHAT_EVENTS_CHANNEL so both names resolve to the same Pusher channel.
+// Alias to CHAT_EVENTS_CHANNEL so both names resolve to the same topic.
 export const ADMIN_CHAT_CHANNEL = CHAT_EVENTS_CHANNEL;
 
 // AUDIT FIX: Group and announcement channels must always exist consistently for

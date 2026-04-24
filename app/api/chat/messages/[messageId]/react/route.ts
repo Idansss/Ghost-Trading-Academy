@@ -5,7 +5,7 @@ import {
   groupReactions,
   requireChannelAccess,
 } from "@/lib/chat";
-import { pusherServer } from "@/lib/pusher";
+import { broadcastRealtimeEvent } from "@/lib/realtime";
 import { prisma } from "@/lib/prisma";
 import { reactionSchema } from "@/lib/validations/chat";
 import type { ApiResponse, ReactionUpdatedEventPayload } from "@/types/chat";
@@ -98,8 +98,10 @@ export async function POST(
       reactions: groupReactions(updatedReactions, session.user.id),
     };
 
-    if (pusherServer) {
-      await pusherServer.trigger(getReactionsChannelName(message.channelId), "reaction-updated", payload);
+    try {
+      await broadcastRealtimeEvent(getReactionsChannelName(message.channelId), "reaction-updated", payload);
+    } catch (realtimeError) {
+      console.error("[chat/react POST] Realtime broadcast failed", realtimeError);
     }
 
     return NextResponse.json({ data: payload });

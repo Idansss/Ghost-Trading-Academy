@@ -104,6 +104,45 @@ export function MessageComposer({
 
   const canSend = Boolean(body.trim() || image?.remoteUrl) && !isUploading && !isCoolingDown;
 
+  const submitOutgoingMessage = async (): Promise<void> => {
+    setIsCoolingDown(true);
+    try {
+      await onSubmit({
+        body: body.trim() || undefined,
+        image:
+          image?.remoteUrl && !editingMessage
+            ? {
+                url: image.remoteUrl,
+                width: image.width,
+                height: image.height,
+                name: image.name,
+              }
+            : undefined,
+        replyToId: replyTo?.id ?? null,
+        replyTo: replyTo
+          ? {
+              id: replyTo.id,
+              body: replyTo.body,
+              imageUrl: replyTo.imageUrl,
+              hasImage: Boolean(replyTo.imageUrl),
+              author: { name: replyTo.author.name },
+            }
+          : null,
+        editMessageId: editingMessage?.id,
+      });
+      setBody("");
+      clearImage();
+      onCancelReply();
+      onCancelEdit();
+      onTyping(false);
+      textareaRef.current?.focus();
+    } finally {
+      // If onSubmit throws (e.g. network error), still clear cooldown — otherwise
+      // isCoolingDown stays true forever and the send button stays disabled.
+      window.setTimeout(() => setIsCoolingDown(false), 500);
+    }
+  };
+
   if (isReadOnly && !canPost) {
     return (
       <div className="border-t border-border p-4 text-sm text-muted-foreground">
@@ -233,37 +272,7 @@ export function MessageComposer({
                 return;
               }
 
-              setIsCoolingDown(true);
-              await onSubmit({
-                body: body.trim() || undefined,
-                image:
-                  image?.remoteUrl && !editingMessage
-                    ? {
-                        url: image.remoteUrl,
-                        width: image.width,
-                        height: image.height,
-                        name: image.name,
-                      }
-                    : undefined,
-                replyToId: replyTo?.id ?? null,
-                replyTo: replyTo
-                  ? {
-                      id: replyTo.id,
-                      body: replyTo.body,
-                      imageUrl: replyTo.imageUrl,
-                      hasImage: Boolean(replyTo.imageUrl),
-                      author: { name: replyTo.author.name },
-                    }
-                  : null,
-                editMessageId: editingMessage?.id,
-              });
-              setBody("");
-              clearImage();
-              onCancelReply();
-              onCancelEdit();
-              onTyping(false);
-              textareaRef.current?.focus();
-              window.setTimeout(() => setIsCoolingDown(false), 500);
+              await submitOutgoingMessage();
             }
           }}
           rows={1}
@@ -280,37 +289,7 @@ export function MessageComposer({
               return;
             }
 
-            setIsCoolingDown(true);
-            await onSubmit({
-              body: body.trim() || undefined,
-              image:
-                image?.remoteUrl && !editingMessage
-                  ? {
-                      url: image.remoteUrl,
-                      width: image.width,
-                      height: image.height,
-                      name: image.name,
-                    }
-                  : undefined,
-              replyToId: replyTo?.id ?? null,
-              replyTo: replyTo
-                ? {
-                    id: replyTo.id,
-                    body: replyTo.body,
-                    imageUrl: replyTo.imageUrl,
-                    hasImage: Boolean(replyTo.imageUrl),
-                    author: { name: replyTo.author.name },
-                  }
-                : null,
-              editMessageId: editingMessage?.id,
-            });
-            setBody("");
-            clearImage();
-            onCancelReply();
-            onCancelEdit();
-            onTyping(false);
-            textareaRef.current?.focus();
-            window.setTimeout(() => setIsCoolingDown(false), 500);
+            await submitOutgoingMessage();
           }}
         >
           <Send className="h-4 w-4" />

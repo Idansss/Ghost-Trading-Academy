@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getChatChannelName, requireChannelAccess } from "@/lib/chat";
-import { pusherServer } from "@/lib/pusher";
+import { broadcastRealtimeEvent } from "@/lib/realtime";
 import { prisma } from "@/lib/prisma";
 import type { ApiResponse, MessagePinnedEventPayload } from "@/types/chat";
 
@@ -76,8 +76,10 @@ export async function PATCH(
       return eventPayload;
     });
 
-    if (pusherServer) {
-      await pusherServer.trigger(getChatChannelName(message.channelId), "message-pinned", payload);
+    try {
+      await broadcastRealtimeEvent(getChatChannelName(message.channelId), "message-pinned", payload);
+    } catch (realtimeError) {
+      console.error("[chat/pin PATCH] Realtime broadcast failed", realtimeError);
     }
 
     return NextResponse.json({ data: payload });

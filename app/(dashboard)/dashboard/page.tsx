@@ -23,7 +23,7 @@ export default async function DashboardPage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         eyebrow="Overview"
         title="Trading Command Center"
@@ -38,8 +38,8 @@ export default async function DashboardPage() {
         nextStepTitle={data.onboarding.nextStep?.title ?? null}
       />
       <OnboardingChecklist {...data.onboarding} />
-      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.9fr]">
-        <div className="space-y-6">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.25fr)_minmax(18rem,0.9fr)]">
+        <div className="min-w-0 space-y-5">
           <StatsGrid {...data.kpis} />
           <DecisionSupportCards
             latestOutlook={data.latestOutlook}
@@ -51,23 +51,25 @@ export default async function DashboardPage() {
           />
         </div>
 
-        <StreakCard {...data.streak} />
+        <div className="min-w-0">
+          <StreakCard {...data.streak} />
+        </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.65fr_1fr]">
-        <div className="space-y-6">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.55fr)_minmax(18rem,1fr)]">
+        <div className="min-w-0 space-y-5">
           <EquityChart data={data.equityCurve} />
           <RecentTradesTable trades={data.recentTrades} />
         </div>
 
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-5">
           <MonthlyPnlChart data={monthlyBars} />
 
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle>Today&apos;s Market Bias</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2.5">
               {data.latestOutlook ? (
                 <>
                   <Badge
@@ -84,12 +86,12 @@ export default async function DashboardPage() {
                     <span className="status-dot bg-current" />
                     {data.latestOutlook.marketBias}
                   </Badge>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     {data.latestOutlook.biasExplanation}
                   </p>
                 </>
               ) : (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   No market outlook has been posted yet.
                 </p>
               )}
@@ -97,13 +99,15 @@ export default async function DashboardPage() {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3">
               <CardTitle>Active Signals</CardTitle>
             </CardHeader>
-            <CardContent className="flex items-end justify-between gap-3">
+            <CardContent className="flex items-end justify-between gap-2.5">
               <div>
-                <p className="text-3xl font-semibold">{data.activeSignals}</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-[2rem] font-semibold leading-none" data-number="true">
+                  {data.activeSignals}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">
                   Live or pending setups on the desk.
                 </p>
               </div>
@@ -119,11 +123,11 @@ export default async function DashboardPage() {
 
           {data.pinnedFocus ? (
             <Card>
-              <CardHeader>
+              <CardHeader className="pb-3">
                 <CardTitle>Weekly Focus Reminder</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">{data.pinnedFocus}</p>
+                <p className="text-xs text-muted-foreground">{data.pinnedFocus}</p>
               </CardContent>
             </Card>
           ) : null}

@@ -42,6 +42,7 @@ export async function POST(request: Request) {
       title: string;
       description: string;
       coverImage?: string | null;
+      handoutPdfUrl?: string | null;
       isPublished?: boolean;
     }>(request);
     const maxOrder = await prisma.course.aggregate({ _max: { order: true } });
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
         title: body.title,
         description: body.description,
         coverImage: body.coverImage ?? null,
+        handoutPdfUrl: body.handoutPdfUrl ?? null,
         isPublished: body.isPublished ?? false,
         order: (maxOrder._max.order ?? 0) + 1,
       },

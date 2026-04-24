@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient, type InfiniteData } from "@tanstack/react-query";
-import { getPusherClient } from "@/lib/pusher-client";
+import { getSupabaseBrowserClient } from "@/lib/supabase/browser-client";
 import type {
   ChatChannelWithMeta,
   ChatMessageWithAuthor,
@@ -30,9 +30,14 @@ function pinnedQueryKey(channelId: string) {
   return ["chat", "pinned", channelId] as const;
 }
 
-// AUDIT FIX: Realtime updates previously leaked subscriptions, used multiple
-// channel naming schemes, and did not maintain sidebar cache state. This hook
-// now owns all chat realtime subscriptions with typed payloads and cleanup.
+/** Supabase passes our JSON body as `payload` on broadcast callbacks. */
+function asPayload<T>(raw: unknown): T {
+  if (raw && typeof raw === "object" && "payload" in raw) {
+    return (raw as { payload: T }).payload;
+  }
+  return raw as T;
+}
+
 export function useChatRealtime({
   channelId,
   currentUserId,
@@ -46,8 +51,12 @@ export function useChatRealtime({
   const [connectionState, setConnectionState] = useState<"connected" | "disconnected">("connected");
   const typingTimeouts = useRef<Map<string, number>>(new Map());
 
-  const subscribedChannelIds = useMemo(
-    () => channels.map((channel) => channel.id).sort(),
+  const subscribedChannelKey = useMemo(
+    () =>
+      channels
+        .map((c) => c.id)
+        .sort()
+        .join(","),
     [channels],
   );
 
@@ -56,17 +65,10 @@ export function useChatRealtime({
       return;
     }
 
-    const pusher = getPusherClient();
-    if (!pusher) {
+    const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
       return;
     }
-
-    const subscribedChannels = subscribedChannelIds.map((subscribedChannelId) =>
-      pusher.subscribe(`chat-channel-${subscribedChannelId}`),
-    );
-    const activeReactionsChannel = pusher.subscribe(`reactions-${channelId}`);
-    const activeTypingChannel = pusher.subscribe(`typing-${channelId}`);
-    const adminChannel = pusher.subscribe("admin-chat");
 
     const upsertTimelineMessage = (incomingMessage: ChatMessageWithAuthor) => {
       queryClient.setQueryData<InfiniteData<MessagesPage>>(messageQueryKey(channelId), (existingData) => {
@@ -287,25 +289,17 @@ export function useChatRealtime({
       );
     };
 
-    const handleConnected = () => {
-      setConnectionState("connected");
-    };
-
-    const handleDisconnected = () => {
-      setConnectionState("disconnected");
-    };
-
-    const handleNewChannel = (channel: ChatChannelWithMeta) => {
+    const handleNewChannel = (next: ChatChannelWithMeta) => {
       queryClient.setQueryData<ChatChannelWithMeta[] | undefined>(channelQueryKey, (existingChannels) => {
         if (!existingChannels) {
-          return [channel];
+          return [next];
         }
 
-        if (existingChannels.some((existingChannel) => existingChannel.id === channel.id)) {
+        if (existingChannels.some((existingChannel) => existingChannel.id === next.id)) {
           return existingChannels;
         }
 
-        return [channel, ...existingChannels].sort((left, right) => {
+        return [next, ...existingChannels].sort((left, right) => {
           const getPriority = (type: ChatChannelWithMeta["type"]): number => {
             if (type === "ANNOUNCEMENT") return 0;
             if (type === "GROUP") return 1;
@@ -325,44 +319,70 @@ export function useChatRealtime({
       });
     };
 
-    subscribedChannels.forEach((subscribedChannel) => {
-      subscribedChannel.bind("new-message", handleNewMessage);
+    const broadcastOpts = { config: { broadcast: { self: true } } };
 
-      if (subscribedChannel.name === `chat-channel-${channelId}`) {
-        subscribedChannel.bind("message-edited", handleEditedMessage);
-        subscribedChannel.bind("message-deleted", handleDeletedMessage);
-        subscribedChannel.bind("message-pinned", handlePinUpdated);
+    const subscribedChannelIds = subscribedChannelKey.split(",").filter(Boolean);
+
+    const chatChannels = subscribedChannelIds.map((subscribedChannelId) => {
+      const name = `chat-channel-${subscribedChannelId}`;
+      const ch = supabase.channel(name, broadcastOpts);
+      ch.on("broadcast", { event: "new-message" }, (msg) => {
+        handleNewMessage(asPayload<ChatMessageWithAuthor>(msg));
+      });
+      if (subscribedChannelId === channelId) {
+        ch.on("broadcast", { event: "message-edited" }, (msg) => {
+          handleEditedMessage(asPayload<MessageEditedEventPayload>(msg));
+        });
+        ch.on("broadcast", { event: "message-deleted" }, (msg) => {
+          handleDeletedMessage(asPayload<MessageDeletedEventPayload>(msg));
+        });
+        ch.on("broadcast", { event: "message-pinned" }, (msg) => {
+          handlePinUpdated(asPayload<MessagePinnedEventPayload>(msg));
+        });
       }
+      ch.subscribe();
+      return ch;
     });
 
-    activeReactionsChannel.bind("reaction-updated", handleReactionUpdated);
-    activeTypingChannel.bind("typing-start", handleTypingStart);
-    activeTypingChannel.bind("typing-stop", handleTypingStop);
-    adminChannel.bind("new-channel", handleNewChannel);
+    const activeReactionsChannel = supabase.channel(`reactions-${channelId}`, broadcastOpts);
+    activeReactionsChannel.on("broadcast", { event: "reaction-updated" }, (msg) => {
+      handleReactionUpdated(asPayload<ReactionUpdatedEventPayload>(msg));
+    });
+    activeReactionsChannel.subscribe();
 
-    pusher.connection.bind("connected", handleConnected);
-    pusher.connection.bind("disconnected", handleDisconnected);
+    const activeTypingChannel = supabase.channel(`typing-${channelId}`, broadcastOpts);
+    activeTypingChannel.on("broadcast", { event: "typing-start" }, (msg) => {
+      handleTypingStart(asPayload<TypingUser>(msg));
+    });
+    activeTypingChannel.on("broadcast", { event: "typing-stop" }, (msg) => {
+      handleTypingStop(asPayload<{ userId: string }>(msg));
+    });
+    activeTypingChannel.subscribe();
+
+    const adminChannel = supabase.channel("admin-chat", broadcastOpts);
+    adminChannel.on("broadcast", { event: "new-channel" }, (msg) => {
+      handleNewChannel(asPayload<ChatChannelWithMeta>(msg));
+    });
+    adminChannel.subscribe();
+
+    const poll = window.setInterval(() => {
+      setConnectionState(supabase.realtime.isConnected() ? "connected" : "disconnected");
+    }, 1500);
 
     return () => {
-      subscribedChannels.forEach((subscribedChannel) => {
-        subscribedChannel.unbind_all();
-        pusher.unsubscribe(subscribedChannel.name);
+      window.clearInterval(poll);
+      chatChannels.forEach((ch) => {
+        void supabase.removeChannel(ch);
       });
-
-      activeReactionsChannel.unbind_all();
-      activeTypingChannel.unbind_all();
-      adminChannel.unbind_all();
-      pusher.unsubscribe(`reactions-${channelId}`);
-      pusher.unsubscribe(`typing-${channelId}`);
-      pusher.unsubscribe("admin-chat");
-      pusher.connection.unbind("connected", handleConnected);
-      pusher.connection.unbind("disconnected", handleDisconnected);
+      void supabase.removeChannel(activeReactionsChannel);
+      void supabase.removeChannel(activeTypingChannel);
+      void supabase.removeChannel(adminChannel);
 
       typingTimeouts.current.forEach((timeout) => window.clearTimeout(timeout));
       typingTimeouts.current.clear();
       setTypingUsers([]);
     };
-  }, [channelId, currentUserId, queryClient, subscribedChannelIds]);
+  }, [channelId, currentUserId, queryClient, subscribedChannelKey]);
 
   return {
     typingUsers,

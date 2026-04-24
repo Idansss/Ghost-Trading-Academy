@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getTypingChannelName, requireChannelAccess } from "@/lib/chat";
-import { pusherServer } from "@/lib/pusher";
+import { broadcastRealtimeEvent } from "@/lib/realtime";
 import { typingSchema } from "@/lib/validations/chat";
 import type { ApiResponse } from "@/types/chat";
 
@@ -30,7 +30,7 @@ function isTypingRateLimited(userId: string, channelId: string): boolean {
   return false;
 }
 
-// AUDIT FIX: Typing events remain Pusher-only, now enforce membership access,
+// AUDIT FIX: Typing events use Supabase broadcast; enforce membership access,
 // rate-limit keystroke spam, and include user name/avatar in the event payload.
 export async function POST(request: Request): Promise<NextResponse<ApiResponse<{ ok: true }> | { error: string }>> {
   try {
@@ -57,8 +57,8 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<{
       return NextResponse.json({ error: "Typing rate limit exceeded." }, { status: 429 });
     }
 
-    if (pusherServer) {
-      await pusherServer.trigger(
+    try {
+      await broadcastRealtimeEvent(
         getTypingChannelName(parsed.data.channelId),
         parsed.data.isTyping ? "typing-start" : "typing-stop",
         {
@@ -67,6 +67,8 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<{
           userAvatar: session.user.avatarUrl ?? null,
         },
       );
+    } catch (realtimeError) {
+      console.error("[chat/typing POST] Realtime broadcast failed", realtimeError);
     }
 
     return NextResponse.json({ data: { ok: true } });

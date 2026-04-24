@@ -243,7 +243,7 @@ export function useSendMessage(channelId: string) {
       if (context?.previousChannels) {
         queryClient.setQueryData(channelQueryKey, context.previousChannels);
       }
-      toast.error("Failed to send message");
+      toast.error(error.message || "Failed to send message");
       console.error("[useSendMessage]", error);
     },
     onSuccess: (message, _payload, context) => {

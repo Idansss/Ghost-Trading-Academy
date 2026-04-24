@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getChatChannelName, mapMessage, requireChannelAccess } from "@/lib/chat";
-import { pusherServer } from "@/lib/pusher";
+import { broadcastRealtimeEvent } from "@/lib/realtime";
 import { prisma } from "@/lib/prisma";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { editMessageSchema } from "@/lib/validations/chat";
@@ -88,11 +88,13 @@ export async function PATCH(
 
     const payload = mapMessage(updatedMessage, session.user.id);
 
-    if (pusherServer) {
-      await pusherServer.trigger(getChatChannelName(updatedMessage.channelId), "message-edited", {
+    try {
+      await broadcastRealtimeEvent(getChatChannelName(updatedMessage.channelId), "message-edited", {
         channelId: updatedMessage.channelId,
         message: payload,
       });
+    } catch (realtimeError) {
+      console.error("[chat/messages PATCH] Realtime broadcast failed", realtimeError);
     }
 
     return NextResponse.json({ data: payload });
@@ -154,8 +156,10 @@ export async function DELETE(
       channelId: message.channelId,
     };
 
-    if (pusherServer) {
-      await pusherServer.trigger(getChatChannelName(message.channelId), "message-deleted", payload);
+    try {
+      await broadcastRealtimeEvent(getChatChannelName(message.channelId), "message-deleted", payload);
+    } catch (realtimeError) {
+      console.error("[chat/messages DELETE] Realtime broadcast failed", realtimeError);
     }
 
     return NextResponse.json({ data: payload });

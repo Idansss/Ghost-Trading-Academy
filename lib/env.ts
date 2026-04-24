@@ -8,9 +8,6 @@ if (!process.env.NEXTAUTH_URL && inferredNextAuthUrl) {
   process.env.NEXTAUTH_URL = inferredNextAuthUrl;
 }
 
-// AUDIT FIX: Added Pusher server/client env vars that were used in lib/pusher.ts
-// and lib/pusher-client.ts but were not validated here. Missing vars at startup
-// now produce a descriptive error rather than a cryptic runtime crash.
 const serverEnvSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required."),
   // AUDIT FIX: Secrets shorter than 32 characters are cryptographically weak.
@@ -55,12 +52,6 @@ const serverEnvSchema = z.object({
   NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
   // AUDIT FIX: Use .optional().or(z.literal("")) so that empty strings in .env
   // (which is the default in .env.example) are accepted without failing min(1).
-  PUSHER_APP_ID: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
-  PUSHER_KEY: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
-  PUSHER_SECRET: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
-  PUSHER_CLUSTER: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
-  NEXT_PUBLIC_PUSHER_KEY: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
-  NEXT_PUBLIC_PUSHER_CLUSTER: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
 });
 
 const parsedEnv = serverEnvSchema.parse({
@@ -82,12 +73,6 @@ const parsedEnv = serverEnvSchema.parse({
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   UPLOADTHING_CDN_DOMAIN: process.env.UPLOADTHING_CDN_DOMAIN,
   NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN: process.env.NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN,
-  PUSHER_APP_ID: process.env.PUSHER_APP_ID,
-  PUSHER_KEY: process.env.PUSHER_KEY,
-  PUSHER_SECRET: process.env.PUSHER_SECRET,
-  PUSHER_CLUSTER: process.env.PUSHER_CLUSTER,
-  NEXT_PUBLIC_PUSHER_KEY: process.env.NEXT_PUBLIC_PUSHER_KEY,
-  NEXT_PUBLIC_PUSHER_CLUSTER: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
 });
 
 const supabasePublicUrl = parsedEnv.NEXT_PUBLIC_SUPABASE_URL;
@@ -111,14 +96,6 @@ export const env = {
   upstashRedisToken: parsedEnv.UPSTASH_REDIS_REST_TOKEN,
   appUrl: parsedEnv.NEXTAUTH_URL,
   publicAppUrl: parsedEnv.NEXT_PUBLIC_APP_URL ?? parsedEnv.NEXTAUTH_URL,
-  // AUDIT FIX: Exported validated Pusher vars so the server and client
-  // singletons read from one typed source instead of raw process.env access.
-  pusherAppId: parsedEnv.PUSHER_APP_ID,
-  pusherKey: parsedEnv.PUSHER_KEY,
-  pusherSecret: parsedEnv.PUSHER_SECRET,
-  pusherCluster: parsedEnv.PUSHER_CLUSTER,
-  publicPusherKey: parsedEnv.NEXT_PUBLIC_PUSHER_KEY,
-  publicPusherCluster: parsedEnv.NEXT_PUBLIC_PUSHER_CLUSTER,
   uploadthingCdnDomain:
     parsedEnv.UPLOADTHING_CDN_DOMAIN ?? parsedEnv.NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN,
 } as const;

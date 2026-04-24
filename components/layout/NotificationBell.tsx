@@ -106,12 +106,17 @@ export function NotificationBell({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="relative h-9 w-9 rounded-xl"
+        >
+          <Bell className="h-4.5 w-4.5" />
           {unreadCount > 0 ? (
             <span
               className={cn(
-                "absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[color:var(--color-red)] px-1 text-[10px] font-semibold text-white",
+                "absolute -right-1 -top-1 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-[color:var(--color-red)] px-1 text-[9px] font-semibold text-white",
                 pulseBadge && "animate-pulse",
               )}
             >

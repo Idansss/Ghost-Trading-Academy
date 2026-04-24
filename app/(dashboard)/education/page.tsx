@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { BookOpen, Plus, Settings2 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { EducationBuilder } from "@/components/admin/EducationBuilder";
@@ -21,6 +22,8 @@ type EducationCourse = {
   id: string;
   title: string;
   description: string;
+  coverImage: string | null;
+  handoutPdfUrl: string | null;
   progress: {
     completedModules: number;
     totalModules: number;
@@ -124,8 +127,32 @@ export default function EducationPage() {
             {data.courses.map((course) => (
               <Card key={course.id}>
                 <CardHeader>
-                  <CardTitle>{course.title}</CardTitle>
-                  <p className="text-sm text-muted-foreground">{course.description}</p>
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                    {course.coverImage ? (
+                      <div className="relative h-32 w-full shrink-0 overflow-hidden rounded-2xl border border-border sm:h-28 sm:w-44">
+                        <Image
+                          src={course.coverImage}
+                          alt=""
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, 11rem"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <CardTitle>{course.title}</CardTitle>
+                      <p className="text-sm text-muted-foreground">{course.description}</p>
+                    </div>
+                  </div>
+                  {course.handoutPdfUrl ? (
+                    <div>
+                      <Button asChild variant="outline" size="sm">
+                        <a href={course.handoutPdfUrl} target="_blank" rel="noreferrer">
+                          Open course PDF
+                        </a>
+                      </Button>
+                    </div>
+                  ) : null}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>

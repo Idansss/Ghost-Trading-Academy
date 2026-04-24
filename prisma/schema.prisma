@@ -649,11 +649,12 @@ model Referral {
 }
 
 model Course {
-  id          String             @id @default(cuid())
-  title       String
-  description String
-  coverImage  String?
-  order       Int
+  id             String             @id @default(cuid())
+  title          String
+  description    String
+  coverImage     String?
+  handoutPdfUrl  String?
+  order          Int
   isPublished Boolean            @default(false)
   modules     CourseModule[]
   enrollments CourseEnrollment[]

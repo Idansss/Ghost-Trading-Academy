@@ -7,7 +7,7 @@ import {
   mapMessage,
   requireChannelAccess,
 } from "@/lib/chat";
-import { pusherServer } from "@/lib/pusher";
+import { broadcastRealtimeEvent } from "@/lib/realtime";
 import { prisma } from "@/lib/prisma";
 import { isTrustedMediaUrl, sanitizeHtml } from "@/lib/sanitize";
 import { sendMessageSchema } from "@/lib/validations/chat";
@@ -259,73 +259,81 @@ export async function POST(
 
     const payload = mapMessage(createdMessage, session.user.id);
 
-    if (pusherServer) {
-      await pusherServer.trigger(getChatChannelName(channelId), "new-message", payload);
+    // Never fail the HTTP response if realtime or notifications break — the
+    // message is already persisted. Realtime outages must not fail this handler.
+    try {
+      await broadcastRealtimeEvent(getChatChannelName(channelId), "new-message", payload);
+    } catch (realtimeError) {
+      console.error("[chat/messages POST] Realtime broadcast failed", realtimeError);
     }
 
-    const channel = await prisma.chatChannel.findUniqueOrThrow({
-      where: { id: channelId },
-      select: { type: true, slug: true },
-    });
+    try {
+      const channel = await prisma.chatChannel.findUniqueOrThrow({
+        where: { id: channelId },
+        select: { type: true, slug: true },
+      });
 
-    const otherMembers = await prisma.channelMember.findMany({
-      where: {
-        channelId,
-        userId: { not: session.user.id },
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
+      const otherMembers = await prisma.channelMember.findMany({
+        where: {
+          channelId,
+          userId: { not: session.user.id },
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-      },
-    });
-
-    if (channel.type === ChannelType.DM && otherMembers.length > 0) {
-      await prisma.notification.createMany({
-        data: otherMembers.map((member) => ({
-          userId: member.user.id,
-          type: NotificationType.DIRECT_MESSAGE,
-          // AUDIT FIX: Restored the broken DM notification template string.
-          title: `New message from ${session.user.name}`,
-          message: cleanBody?.slice(0, 100) ?? "Sent you an image",
-          link: `/community/chat?channel=${channelId}`,
-        })),
       });
-    }
 
-    const mentionMatches = Array.from((cleanBody ?? "").matchAll(/@([a-zA-Z0-9._-]+)/g));
-    const mentionedUsers = otherMembers.filter((member) => {
-      const normalizedName = member.user.name.toLowerCase().replace(/\s+/g, "");
-      return mentionMatches.some((match) => match[1]?.toLowerCase() === normalizedName);
-    });
+      if (channel.type === ChannelType.DM && otherMembers.length > 0) {
+        await prisma.notification.createMany({
+          data: otherMembers.map((member) => ({
+            userId: member.user.id,
+            type: NotificationType.DIRECT_MESSAGE,
+            // AUDIT FIX: Restored the broken DM notification template string.
+            title: `New message from ${session.user.name}`,
+            message: cleanBody?.slice(0, 100) ?? "Sent you an image",
+            link: `/community/chat?channel=${channelId}`,
+          })),
+        });
+      }
 
-    if (channel.type !== ChannelType.DM && mentionedUsers.length > 0) {
-      await prisma.notification.createMany({
-        data: mentionedUsers.map((member) => ({
-          userId: member.user.id,
-          type: NotificationType.BROADCAST,
-          title: `${session.user.name} mentioned you`,
-          message: cleanBody?.slice(0, 100) ?? "Mentioned you in chat",
-          link: `/community/chat?channel=${channelId}`,
-        })),
-        skipDuplicates: true,
+      const mentionMatches = Array.from((cleanBody ?? "").matchAll(/@([a-zA-Z0-9._-]+)/g));
+      const mentionedUsers = otherMembers.filter((member) => {
+        const normalizedName = member.user.name.toLowerCase().replace(/\s+/g, "");
+        return mentionMatches.some((match) => match[1]?.toLowerCase() === normalizedName);
       });
-    }
 
-    if (channel.slug === "announcements" && session.user.role === "ADMIN" && otherMembers.length > 0) {
-      await prisma.notification.createMany({
-        data: otherMembers.map((member) => ({
-          userId: member.user.id,
-          type: NotificationType.NEW_ANNOUNCEMENT,
-          title: "New announcement",
-          message: cleanBody?.slice(0, 100) ?? "New announcement image",
-          link: `/community/chat?channel=${channelId}`,
-        })),
-        skipDuplicates: true,
-      });
+      if (channel.type !== ChannelType.DM && mentionedUsers.length > 0) {
+        await prisma.notification.createMany({
+          data: mentionedUsers.map((member) => ({
+            userId: member.user.id,
+            type: NotificationType.BROADCAST,
+            title: `${session.user.name} mentioned you`,
+            message: cleanBody?.slice(0, 100) ?? "Mentioned you in chat",
+            link: `/community/chat?channel=${channelId}`,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      if (channel.slug === "announcements" && session.user.role === "ADMIN" && otherMembers.length > 0) {
+        await prisma.notification.createMany({
+          data: otherMembers.map((member) => ({
+            userId: member.user.id,
+            type: NotificationType.NEW_ANNOUNCEMENT,
+            title: "New announcement",
+            message: cleanBody?.slice(0, 100) ?? "New announcement image",
+            link: `/community/chat?channel=${channelId}`,
+          })),
+          skipDuplicates: true,
+        });
+      }
+    } catch (notifyError) {
+      console.error("[chat/messages POST] notification fan-out failed", notifyError);
     }
 
     return NextResponse.json({ data: payload }, { status: 201 });

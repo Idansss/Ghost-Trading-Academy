@@ -16,6 +16,7 @@ export async function PATCH(
       title?: string;
       description?: string;
       coverImage?: string | null;
+      handoutPdfUrl?: string | null;
       isPublished?: boolean;
       order?: number;
     }>(request);
@@ -25,6 +26,7 @@ export async function PATCH(
         ...(body.title !== undefined ? { title: body.title } : {}),
         ...(body.description !== undefined ? { description: body.description } : {}),
         ...(body.coverImage !== undefined ? { coverImage: body.coverImage } : {}),
+        ...(body.handoutPdfUrl !== undefined ? { handoutPdfUrl: body.handoutPdfUrl } : {}),
         ...(body.isPublished !== undefined ? { isPublished: body.isPublished } : {}),
         ...(body.order !== undefined ? { order: body.order } : {}),
       },

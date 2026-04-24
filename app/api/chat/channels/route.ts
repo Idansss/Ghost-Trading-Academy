@@ -6,7 +6,7 @@ import {
   generateUniqueChannelSlug,
   mapChannel,
 } from "@/lib/chat";
-import { pusherServer } from "@/lib/pusher";
+import { broadcastRealtimeEvent } from "@/lib/realtime";
 import { prisma } from "@/lib/prisma";
 import { createChannelSchema } from "@/lib/validations/chat";
 import { optionalPrismaQuery } from "@/server/core/prisma-schema";
@@ -248,8 +248,10 @@ export async function POST(request: Request): Promise<NextResponse<ApiResponse<C
 
     // AUDIT FIX: New channels now broadcast a dedicated sidebar event so
     // connected clients can show them without a refresh.
-    if (pusherServer) {
-      await pusherServer.trigger(CHAT_EVENTS_CHANNEL, "new-channel", payload);
+    try {
+      await broadcastRealtimeEvent(CHAT_EVENTS_CHANNEL, "new-channel", payload);
+    } catch (realtimeError) {
+      console.error("[chat/channels POST] Realtime broadcast failed", realtimeError);
     }
 
     return NextResponse.json({ data: payload }, { status: 201 });

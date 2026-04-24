@@ -14,7 +14,7 @@ export function EquityChart({
       <CardHeader>
         <CardTitle>Equity Curve</CardTitle>
       </CardHeader>
-      <CardContent className="h-[320px]">
+      <CardContent className="h-[280px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data}>
             <defs>

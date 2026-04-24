@@ -15,17 +15,18 @@ export function MetricCard({
 }) {
   return (
     <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+      <CardHeader className="pb-2.5">
+        <CardTitle className="text-xs font-medium text-muted-foreground">
           {label}
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-2.5">
           <div>
             <p
+              data-number="true"
               className={cn(
-                "text-2xl font-semibold",
+                "text-2xl font-semibold leading-none",
                 tone === "positive" && "text-[color:var(--color-green)]",
                 tone === "negative" && "text-[color:var(--color-red)]",
               )}
@@ -33,21 +34,21 @@ export function MetricCard({
               {value}
             </p>
             {helper ? (
-              <p className="mt-2 text-xs text-muted-foreground">{helper}</p>
+              <p className="mt-1.5 text-xs text-muted-foreground">{helper}</p>
             ) : null}
           </div>
           <div
             className={cn(
-              "grid h-10 w-10 place-items-center rounded-2xl",
+              "grid h-9 w-9 shrink-0 place-items-center rounded-xl",
               tone === "positive" && "bg-[color:var(--color-green-light)] text-[color:var(--color-green)]",
               tone === "negative" && "bg-[color:var(--color-red-light)] text-[color:var(--color-red)]",
               tone === "neutral" && "bg-primary/10 text-primary",
             )}
           >
             {tone === "negative" ? (
-              <ArrowDownRight className="h-4 w-4" />
+              <ArrowDownRight className="h-3.5 w-3.5 flex-shrink-0" />
             ) : (
-              <ArrowUpRight className="h-4 w-4" />
+              <ArrowUpRight className="h-3.5 w-3.5 flex-shrink-0" />
             )}
           </div>
         </div>

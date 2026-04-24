@@ -40,19 +40,19 @@ export function Topbar({
   return (
     <div className="sticky top-0 z-30">
       <MobileHeader user={user} unreadCount={unreadCount} searchItems={searchItems} />
-      <header className="hidden h-20 items-center justify-between gap-4 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-6 md:flex">
-        <div className="flex max-w-md flex-1 items-center gap-3">
+      <header className="hidden h-[4.5rem] items-center justify-between gap-3 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-5 md:flex">
+        <div className="flex max-w-[30rem] flex-1 items-center gap-2.5">
           <GlobalSearch items={searchItems} />
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5">
           <ThemeToggle />
           <NotificationBell initialUnreadCount={unreadCount} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-auto rounded-2xl px-2 py-1">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
+              <Button variant="ghost" className="h-auto rounded-xl px-2 py-1">
+                <div className="flex items-center gap-2.5">
+                  <Avatar className="h-9 w-9">
                     <AvatarImage src={user.avatarUrl ?? undefined} alt={displayName} />
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
@@ -60,7 +60,7 @@ export function Topbar({
                     <p className="text-sm font-medium">{displayName}</p>
                     <Badge
                       variant={user.role === "MEMBER" ? "muted" : "default"}
-                      className="mt-1"
+                      className="mt-0.5"
                     >
                       <span className="status-dot bg-current" />
                       {roleDisplayName(user.role)}
