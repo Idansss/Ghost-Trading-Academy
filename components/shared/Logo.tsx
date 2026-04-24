@@ -1,5 +1,8 @@
+import Image from "next/image";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+
+const LOGO_SRC = "/brand/logo.png";
 
 export function Logo({ compact = false }: { compact?: boolean }) {
   return (
@@ -10,8 +13,15 @@ export function Logo({ compact = false }: { compact?: boolean }) {
         compact && "justify-center px-2",
       )}
     >
-      <span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary/15 text-sm font-semibold text-primary">
-        AV
+      <span className="relative grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-2xl bg-black ring-1 ring-border/60">
+        <Image
+          src={LOGO_SRC}
+          alt=""
+          width={40}
+          height={40}
+          className="h-full w-full object-contain p-0.5"
+          priority
+        />
       </span>
       {!compact ? (
         <span className="flex flex-col">

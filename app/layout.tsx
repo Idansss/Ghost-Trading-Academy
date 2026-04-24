@@ -25,7 +25,10 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: platformName, template: `%s | ${platformName}` },
     description:
       "Professional trading signals, journal, education, and analytics for serious crypto traders.",
-    icons: { icon: siteConfig.faviconUrl || "/favicon.ico" },
+    icons: {
+      icon: siteConfig.faviconUrl || "/brand/logo.png",
+      apple: siteConfig.faviconUrl || "/brand/logo.png",
+    },
     manifest: "/manifest.json",
   };
 }

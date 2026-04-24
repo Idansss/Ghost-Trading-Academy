@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   BarChart3,
@@ -121,8 +122,15 @@ export default async function HomePage() {
       <header className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2.5">
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/15 text-sm font-bold text-primary">
-              G
+            <span className="relative grid h-9 w-9 shrink-0 place-items-center overflow-hidden rounded-xl bg-black ring-1 ring-border/60">
+              <Image
+                src="/brand/logo.png"
+                alt=""
+                width={36}
+                height={36}
+                className="h-full w-full object-contain p-0.5"
+                priority
+              />
             </span>
             <span className="text-sm font-semibold tracking-tight">{platformName}</span>
           </div>
