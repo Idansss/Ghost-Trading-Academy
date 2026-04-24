@@ -10,7 +10,7 @@ type Win = {
   coin: string;
   pnlPercent: number;
   message: string;
-  imageUrl?: string | null;
+  imageUrl: string | null;
   likesCount: number;
   isApproved: boolean;
   createdAt: Date | string;
@@ -40,7 +40,14 @@ export function WinsFeedClient({
           userName={userName}
           userAvatarUrl={userAvatarUrl}
           onWinShared={(win) => {
-            setWins((prev) => [{ ...win, createdAt: new Date(win.createdAt) }, ...prev]);
+            setWins((prev) => [
+              {
+                ...win,
+                imageUrl: win.imageUrl ?? null,
+                createdAt: new Date(win.createdAt),
+              },
+              ...prev,
+            ]);
           }}
         />
       </div>

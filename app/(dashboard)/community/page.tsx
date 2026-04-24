@@ -18,7 +18,9 @@ export default async function CommunityPage() {
       take: 20,
     }),
     prisma.memberWin.findMany({
-      where: { isApproved: true },
+      where: {
+        OR: [{ isApproved: true }, { userId: user.id }],
+      },
       orderBy: { createdAt: "desc" },
       include: {
         user: {

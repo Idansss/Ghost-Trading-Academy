@@ -1,7 +1,6 @@
 "use client";
 
 import { ImageIcon, Trophy, X } from "lucide-react";
-import Image from "next/image";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -164,13 +163,11 @@ export function ShareWinModal({
             <Label>Chart Screenshot (optional)</Label>
             {imagePreview ? (
               <div className="relative overflow-hidden rounded-xl border border-border">
-                <Image
+                {/* Use native img for blob: preview URLs; next/image does not load blob URLs reliably */}
+                <img
                   src={imagePreview}
                   alt="Win screenshot preview"
-                  width={400}
-                  height={200}
                   className="h-40 w-full object-cover"
-                  unoptimized
                 />
                 <button
                   type="button"
