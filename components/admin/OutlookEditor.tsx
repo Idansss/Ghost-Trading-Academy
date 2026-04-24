@@ -43,6 +43,7 @@ export function OutlookEditor({
                 ? {
                     marketBias: data.outlook.marketBias,
                     biasExplanation: data.outlook.biasExplanation,
+                    chartImageUrl: data.outlook.chartImageUrl ?? "",
                     coinsToWatch: data.outlook.coinsToWatch as Array<{
                       coin: string;
                       note: string;

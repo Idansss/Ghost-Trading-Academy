@@ -52,6 +52,7 @@ export function SignalsDesk() {
           timeframe: signal.timeframe,
           rrRatio: signal.rrRatio,
           reasoning: signal.reasoning,
+          chartImageUrl: signal.chartImageUrl,
           status: "ACTIVE",
           isVipOnly: signal.isVipOnly,
         }),

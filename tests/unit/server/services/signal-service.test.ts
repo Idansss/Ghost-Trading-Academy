@@ -24,6 +24,7 @@ function makeSignal(overrides: Record<string, unknown> = {}) {
     timeframe: "4H",
     rrRatio: 2.5,
     reasoning: "<p>Strong support</p>",
+    chartImageUrl: null,
     status: "ACTIVE",
     isVipOnly: true,
     outcomeNote: null,
@@ -221,6 +222,35 @@ describe("SignalService.toggleTakenState", () => {
 // ─── createSignal ─────────────────────────────────────────────────────────────
 
 describe("SignalService.createSignal", () => {
+  it("rejects untrusted chart image URLs", async () => {
+    const service = new SignalService(makeSignalsDeps());
+
+    await expect(
+      service.createSignal(
+        {
+          coin: "BTC",
+          direction: "LONG" as never,
+          entryZone: "90000-91000",
+          stopLoss: "88000",
+          tp1: "93000",
+          tp2: "95000",
+          tp3: "98000",
+          riskLevel: "MEDIUM" as never,
+          timeframe: "4H",
+          rrRatio: 2.5,
+          reasoning: "Strong support level",
+          chartImageUrl: "https://malicious-site.com/chart.png",
+          status: "ACTIVE" as never,
+          isVipOnly: true,
+        },
+        { adminId: "admin-1" },
+      ),
+    ).rejects.toMatchObject({
+      code: "BAD_REQUEST",
+      statusCode: 400,
+    } satisfies Partial<AppError>);
+  });
+
   it("creates a signal and returns it", async () => {
     const created = makeSignal();
     const createWithAudit = vi.fn().mockResolvedValue(created);
@@ -241,6 +271,7 @@ describe("SignalService.createSignal", () => {
       timeframe: "4H",
       rrRatio: 2.5,
       reasoning: "Strong support level",
+      chartImageUrl: "https://utfs.io/f/chart-image",
       status: "ACTIVE" as never,
       isVipOnly: true,
     };

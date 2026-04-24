@@ -377,6 +377,7 @@ model Signal {
   timeframe String
   rrRatio   Float
   reasoning String
+  chartImageUrl String?
   status    SignalStatus  @default(ACTIVE)
   outcomeNote String?
   tp1Hit    Boolean       @default(false)
@@ -447,6 +448,7 @@ model DailyOutlook {
   date            DateTime   @unique
   marketBias      MarketBias
   biasExplanation String
+  chartImageUrl   String?
   coinsToWatch    Json
   levels          Json
   avoidToday      Json

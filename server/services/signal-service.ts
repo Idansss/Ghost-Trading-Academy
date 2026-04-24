@@ -2,7 +2,7 @@ import type { SignalStatus } from "@prisma/client";
 import { mapMessage } from "@/lib/chat";
 import { logUserActivity } from "@/lib/activity";
 import { pusherServer } from "@/lib/pusher";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { assertTrustedImageUrl, sanitizeHtml } from "@/lib/sanitize";
 import {
   dispatchPublishedSignalAlerts,
   dispatchSignalOutcomeAlerts,
@@ -65,10 +65,13 @@ export class SignalService {
     input: z.infer<typeof signalSchema>,
     context: { adminId: string; ipAddress?: string | null },
   ) {
+    assertTrustedImageUrl(input.chartImageUrl ?? null);
+
     const signal = await this.deps.signals.createWithAudit({
       signalData: {
         ...input,
         reasoning: sanitizeHtml(input.reasoning),
+        chartImageUrl: input.chartImageUrl || null,
         postedBy: context.adminId,
         closedAt: null,
         finalPnlR: null,
@@ -99,6 +102,10 @@ export class SignalService {
     const nextStatus = input.status ?? existingSignal.status;
     const shouldCloseSignal = closedSignalStatuses.has(nextStatus);
 
+    if (input.chartImageUrl !== undefined) {
+      assertTrustedImageUrl(input.chartImageUrl ?? null);
+    }
+
     const signal = await this.deps.signals.updateWithAudit(signalId, {
       adminId: context.adminId,
       ipAddress: context.ipAddress,
@@ -117,6 +124,10 @@ export class SignalService {
           input.reasoning !== undefined
             ? sanitizeHtml(input.reasoning)
             : existingSignal.reasoning,
+        chartImageUrl:
+          input.chartImageUrl === undefined
+            ? existingSignal.chartImageUrl
+            : input.chartImageUrl || null,
         status: nextStatus,
         isVipOnly: input.isVipOnly ?? existingSignal.isVipOnly,
         outcomeNote:

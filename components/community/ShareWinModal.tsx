@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import type { z } from "zod";
 import { memberWinSchema } from "@/lib/validators";
 import { fetchJson } from "@/lib/client-api";
-import { getUploadThingFileUrl, useUploadThing } from "@/lib/uploadthing";
+import { uploadFileToSupabaseStorage } from "@/lib/storage/upload-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -51,8 +51,6 @@ export function ShareWinModal({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const { startUpload } = useUploadThing("imageUploader");
-
   const form = useForm<WinValues>({
     resolver: zodResolver(memberWinSchema),
     defaultValues: { coin: "", pnlPercent: 0, message: "", imageUrl: null },
@@ -69,14 +67,9 @@ export function ShareWinModal({
     setImagePreview(URL.createObjectURL(file));
     setIsUploading(true);
     try {
-      const uploaded = await startUpload([file]);
-      const url = getUploadThingFileUrl(uploaded?.[0]);
-      if (url) {
-        form.setValue("imageUrl", url);
-        toast.success("Image uploaded.");
-      } else {
-        throw new Error("Upload failed");
-      }
+      const url = await uploadFileToSupabaseStorage(file, "memberWin");
+      form.setValue("imageUrl", url);
+      toast.success("Image uploaded.");
     } catch {
       toast.error("Could not upload image. Try again.");
       setImagePreview(null);

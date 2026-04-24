@@ -33,6 +33,7 @@ export type LeaderboardResult = {
   top: LeaderboardRow[];
   currentUser: LeaderboardRow | null;
   currentUserEligible: boolean;
+  includeAllMembers: boolean;
 };
 
 const MIN_TRADES = 10;
@@ -47,24 +48,29 @@ function toClosedTrades(trades: LeaderboardTrade[]) {
   return trades.filter((trade) => trade.outcome !== "PENDING" && trade.outcome !== "CANCELLED");
 }
 
-function buildLeaderboardRows(users: LeaderboardUser[]) {
+function buildLeaderboardRows(users: LeaderboardUser[], includeAllMembers = false) {
   return users
     .map<LeaderboardRow | null>((user) => {
       const closedTrades = toClosedTrades(user.trades);
 
-      if (!user.leaderboardOptIn || closedTrades.length < MIN_TRADES) {
+      if (
+        !includeAllMembers &&
+        (!user.leaderboardOptIn || closedTrades.length < MIN_TRADES)
+      ) {
         return null;
       }
 
       const wins = closedTrades.filter((trade) => trade.outcome === "WIN").length;
       const avgR =
-        closedTrades.reduce((sum, trade) => sum + toSignedR(trade), 0) / closedTrades.length;
+        closedTrades.length
+          ? closedTrades.reduce((sum, trade) => sum + toSignedR(trade), 0) / closedTrades.length
+          : 0;
 
       return {
         userId: user.id,
         displayName: user.name,
         avatarUrl: user.avatarUrl,
-        winRate: (wins / closedTrades.length) * 100,
+        winRate: closedTrades.length ? (wins / closedTrades.length) * 100 : 0,
         totalTrades: closedTrades.length,
         avgR,
         currentStreak: user.journalStreak,
@@ -73,10 +79,16 @@ function buildLeaderboardRows(users: LeaderboardUser[]) {
     })
     .filter((row): row is LeaderboardRow => row !== null)
     .sort((left, right) => {
+      if ((right.totalTrades > 0 ? 1 : 0) !== (left.totalTrades > 0 ? 1 : 0)) {
+        return (right.totalTrades > 0 ? 1 : 0) - (left.totalTrades > 0 ? 1 : 0);
+      }
       if (right.winRate !== left.winRate) return right.winRate - left.winRate;
       if (right.avgR !== left.avgR) return right.avgR - left.avgR;
       if (right.totalTrades !== left.totalTrades) return right.totalTrades - left.totalTrades;
-      return right.currentStreak - left.currentStreak;
+      if (right.currentStreak !== left.currentStreak) {
+        return right.currentStreak - left.currentStreak;
+      }
+      return left.displayName.localeCompare(right.displayName);
     })
     .map((row, index) => ({
       ...row,
@@ -86,7 +98,12 @@ function buildLeaderboardRows(users: LeaderboardUser[]) {
     }));
 }
 
-export async function getLeaderboard(userId: string, timeframe: LeaderboardTimeframe = "all"): Promise<LeaderboardResult> {
+export async function getLeaderboard(
+  userId: string,
+  timeframe: LeaderboardTimeframe = "all",
+  options?: { includeAllMembers?: boolean },
+): Promise<LeaderboardResult> {
+  const includeAllMembers = options?.includeAllMembers ?? false;
   const tradeDateFilter =
     timeframe === "month"
       ? {
@@ -97,12 +114,14 @@ export async function getLeaderboard(userId: string, timeframe: LeaderboardTimef
       : {};
 
   const users = await prisma.user.findMany({
-    where: {
-      OR: [
-        { leaderboardOptIn: true },
-        { id: userId },
-      ],
-    },
+    where: includeAllMembers
+      ? undefined
+      : {
+          OR: [
+            { leaderboardOptIn: true },
+            { id: userId },
+          ],
+        },
     select: {
       id: true,
       name: true,
@@ -119,18 +138,21 @@ export async function getLeaderboard(userId: string, timeframe: LeaderboardTimef
     },
   });
 
-  const rows = buildLeaderboardRows(users);
+  const rows = buildLeaderboardRows(users, includeAllMembers);
   const currentUser = rows.find((row) => row.userId === userId) ?? null;
   const currentUserBase = users.find((user) => user.id === userId) ?? null;
   const currentUserEligible =
-    currentUserBase !== null &&
-    currentUserBase.leaderboardOptIn &&
-    toClosedTrades(currentUserBase.trades).length >= MIN_TRADES;
+    includeAllMembers
+      ? currentUser !== null
+      : currentUserBase !== null &&
+        currentUserBase.leaderboardOptIn &&
+        toClosedTrades(currentUserBase.trades).length >= MIN_TRADES;
 
   return {
     timeframe,
-    top: rows.slice(0, 20),
+    top: rows,
     currentUser,
     currentUserEligible,
+    includeAllMembers,
   };
 }

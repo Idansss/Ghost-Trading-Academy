@@ -7,14 +7,18 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { uploadFileToSupabaseStorage } from "@/lib/storage/upload-client";
 
-export function TradeChartUploadField({
+export function ImageUploadField({
   imageUrl,
   onUpload,
   onRemove,
+  title = "Upload image",
+  description = "Attach a chart or visual reference from your desk.",
 }: {
   imageUrl?: string | null;
   onUpload: (url: string) => void;
   onRemove: () => void;
+  title?: string;
+  description?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
@@ -22,6 +26,7 @@ export function TradeChartUploadField({
 
   const handleFiles = async (files: FileList | File[]) => {
     const file = Array.from(files)[0];
+
     if (!file) {
       return;
     }
@@ -29,15 +34,15 @@ export function TradeChartUploadField({
     setIsUploading(true);
     setProgress(0);
     try {
-      const url = await uploadFileToSupabaseStorage(file, "tradeChart", {
+      const url = await uploadFileToSupabaseStorage(file, "adminImage", {
         onProgress: setProgress,
       });
 
       onUpload(url);
-      toast.success("Chart image uploaded. Save the trade to attach it.");
+      toast.success("Image uploaded successfully.");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Failed to upload chart image.",
+        error instanceof Error ? error.message : "Failed to upload image.",
       );
     } finally {
       setIsUploading(false);
@@ -51,9 +56,9 @@ export function TradeChartUploadField({
           <div className="relative h-56 w-full">
             <Image
               src={imageUrl}
-              alt="Trade chart upload preview"
+              alt={title}
               fill
-              className="object-cover"
+              className="object-contain"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
           </div>
@@ -77,7 +82,7 @@ export function TradeChartUploadField({
               size="icon"
               variant="outline"
               onClick={onRemove}
-              aria-label="Remove chart image"
+              aria-label="Remove uploaded image"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -96,10 +101,8 @@ export function TradeChartUploadField({
             <ImagePlus className="h-6 w-6 text-primary" />
           )}
           <div className="space-y-1">
-            <p className="text-sm font-medium">Upload chart image</p>
-            <p className="text-xs text-muted-foreground">
-              Add a screenshot from your chart. Mobile file pickers can use your camera roll directly.
-            </p>
+            <p className="text-sm font-medium">{title}</p>
+            <p className="text-xs text-muted-foreground">{description}</p>
             {isUploading ? (
               <p className="text-xs text-primary">Uploading {progress}%...</p>
             ) : null}

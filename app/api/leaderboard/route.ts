@@ -11,7 +11,11 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const timeframe = searchParams.get("timeframe") === "month" ? "month" : "all";
 
-    return Response.json(await getLeaderboard(user.id, timeframe));
+    return Response.json(
+      await getLeaderboard(user.id, timeframe, {
+        includeAllMembers: user.role === "ADMIN",
+      }),
+    );
   } catch (error) {
     if (error instanceof Error && error.message === "Unauthorized") {
       return apiError("Unauthorized.", 401);

@@ -31,6 +31,7 @@ type LeaderboardResponse = {
   top: LeaderboardRow[];
   currentUser: LeaderboardRow | null;
   currentUserEligible: boolean;
+  includeAllMembers: boolean;
 };
 
 const podiumIcons = [Crown, Trophy, Medal];
@@ -108,7 +109,11 @@ export default function CommunityLeaderboardPage() {
         <PageHeader
           eyebrow="Community"
           title="Member Leaderboard"
-          description="Ranked by win rate with a minimum of 10 closed trades. No raw PnL is shown."
+          description={
+            data.includeAllMembers
+              ? "Admin view of all members and trade stats. Raw PnL is still hidden."
+              : "Ranked by win rate with a minimum of 10 closed trades. No raw PnL is shown."
+          }
           action={<LeaderboardTabs value={timeframe} />}
         />
 
@@ -159,7 +164,9 @@ export default function CommunityLeaderboardPage() {
         ) : (
           <Card>
             <CardContent className="p-8 text-center text-sm text-muted-foreground">
-              No members qualify for the leaderboard yet. Members need to opt in and log at least 10 closed trades.
+              {data.includeAllMembers
+                ? "No member records are available for the leaderboard yet."
+                : "No members qualify for the leaderboard yet. Members need to opt in and log at least 10 closed trades."}
             </CardContent>
           </Card>
         )}
@@ -241,11 +248,15 @@ export default function CommunityLeaderboardPage() {
               </div>
             ) : data.currentUserEligible ? (
               <p className="text-sm text-muted-foreground">
-                Your rank will appear here once you meet the minimum trade threshold.
+                {data.includeAllMembers
+                  ? "Your admin view is active, but your own row is not available yet."
+                  : "Your rank will appear here once you meet the minimum trade threshold."}
               </p>
             ) : (
               <p className="text-sm text-muted-foreground">
-                You are not currently eligible for the leaderboard. Opt in from profile settings and maintain at least 10 closed trades.
+                {data.includeAllMembers
+                  ? "You do not have any leaderboard data yet, but the full member table is visible in admin view."
+                  : "You are not currently eligible for the leaderboard. Opt in from profile settings and maintain at least 10 closed trades."}
               </p>
             )}
           </CardContent>

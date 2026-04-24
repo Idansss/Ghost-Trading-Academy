@@ -145,6 +145,19 @@ describe("TradeService.createTrade", () => {
       }),
     ).resolves.not.toThrow();
   });
+
+  it("accepts Supabase Storage public image URLs", async () => {
+    const create = vi.fn().mockResolvedValue(makeTrade());
+    const service = new TradeService(makeDeps({ create }));
+
+    await expect(
+      service.createTrade("user-1", {
+        ...basePayload,
+        chartImageUrl:
+          "https://testproj.supabase.co/storage/v1/object/public/desk-media/trades/user-1/abc-chart.png",
+      }),
+    ).resolves.not.toThrow();
+  });
 });
 
 // ─── listTrades ───────────────────────────────────────────────────────────────

@@ -1,18 +1,39 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, Plus, Save, Trash2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { BookOpen, ExternalLink, FileText, Plus, Save, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { toast } from "sonner";
+import { PdfUploadButton } from "@/components/admin/PdfUploadButton";
+import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchJson } from "@/lib/client-api";
+
+type UploadedPdf = {
+  url: string;
+  key: string;
+  name: string;
+};
+
+type ModuleResource = {
+  id: string;
+  title: string;
+  description: string;
+  type: "PDF" | "VIDEO" | "GUIDE";
+  url: string;
+  tag: string;
+  meta: string;
+  isVipOnly: boolean;
+  fileKey: string | null;
+};
 
 type AdminEducationData = {
   courses: Array<{
@@ -25,12 +46,13 @@ type AdminEducationData = {
       id: string;
       title: string;
       order: number;
-      resources: Array<{ id: string; title: string }>;
+      resources: ModuleResource[];
       quiz: { id: string; questions: Array<{ id: string; question: string }> } | null;
     }>;
   }>;
-  resources: Array<{ id: string; title: string }>;
 };
+
+const resourceTags = ["Foundation", "Strategy", "Psychology", "Risk", "Recap"] as const;
 
 function CourseEditor({
   course,
@@ -39,12 +61,15 @@ function CourseEditor({
   onAddModule,
   onSaveModule,
   onDeleteModule,
+  onCreateResource,
+  onDeleteResource,
   isSavingCourse,
   isDeletingCourse,
   isCreatingModule,
   isSavingModule,
   isDeletingModule,
-  resourcesById,
+  isCreatingResource,
+  isDeletingResource,
 }: {
   course: AdminEducationData["courses"][number];
   onSave: (payload: {
@@ -57,12 +82,22 @@ function CourseEditor({
   onAddModule: (payload: { courseId: string; nextModuleNumber: number }) => void;
   onSaveModule: (payload: { moduleId: string; title: string }) => void;
   onDeleteModule: (moduleId: string) => void;
+  onCreateResource: (payload: {
+    moduleId: string;
+    title: string;
+    description: string;
+    tag: string;
+    isVipOnly: boolean;
+    file: UploadedPdf;
+  }) => Promise<void>;
+  onDeleteResource: (resourceId: string) => void;
   isSavingCourse: boolean;
   isDeletingCourse: boolean;
   isCreatingModule: boolean;
   isSavingModule: (moduleId: string) => boolean;
   isDeletingModule: (moduleId: string) => boolean;
-  resourcesById: Map<string, { id: string; title: string }>;
+  isCreatingResource: (moduleId: string) => boolean;
+  isDeletingResource: (resourceId: string) => boolean;
 }) {
   const [title, setTitle] = useState(course.title);
   const [description, setDescription] = useState(course.description);
@@ -154,7 +189,7 @@ function CourseEditor({
           <div className="space-y-1">
             <h3 className="text-base font-semibold">Modules</h3>
             <p className="text-sm text-muted-foreground">
-              Add new modules, rename existing ones, and prune empty placeholders.
+              Add new modules, rename existing ones, upload PDF resources, and prune empty placeholders.
             </p>
           </div>
 
@@ -166,9 +201,12 @@ function CourseEditor({
                   module={module}
                   onSave={onSaveModule}
                   onDelete={onDeleteModule}
+                  onCreateResource={onCreateResource}
+                  onDeleteResource={onDeleteResource}
                   isSaving={isSavingModule(module.id)}
                   isDeleting={isDeletingModule(module.id)}
-                  resourcesById={resourcesById}
+                  isCreatingResource={isCreatingResource(module.id)}
+                  isDeletingResource={isDeletingResource}
                 />
               ))}
             </div>
@@ -187,18 +225,44 @@ function ModuleEditor({
   module,
   onSave,
   onDelete,
+  onCreateResource,
+  onDeleteResource,
   isSaving,
   isDeleting,
-  resourcesById,
+  isCreatingResource,
+  isDeletingResource,
 }: {
   module: AdminEducationData["courses"][number]["modules"][number];
   onSave: (payload: { moduleId: string; title: string }) => void;
   onDelete: (moduleId: string) => void;
+  onCreateResource: (payload: {
+    moduleId: string;
+    title: string;
+    description: string;
+    tag: string;
+    isVipOnly: boolean;
+    file: UploadedPdf;
+  }) => Promise<void>;
+  onDeleteResource: (resourceId: string) => void;
   isSaving: boolean;
   isDeleting: boolean;
-  resourcesById: Map<string, { id: string; title: string }>;
+  isCreatingResource: boolean;
+  isDeletingResource: (resourceId: string) => boolean;
 }) {
   const [title, setTitle] = useState(module.title);
+  const [resourceTitle, setResourceTitle] = useState("");
+  const [resourceDescription, setResourceDescription] = useState("");
+  const [resourceTag, setResourceTag] = useState<(typeof resourceTags)[number]>("Foundation");
+  const [resourceIsVipOnly, setResourceIsVipOnly] = useState(true);
+  const [uploadedPdf, setUploadedPdf] = useState<UploadedPdf | null>(null);
+
+  const resetResourceDraft = () => {
+    setResourceTitle("");
+    setResourceDescription("");
+    setResourceTag("Foundation");
+    setResourceIsVipOnly(true);
+    setUploadedPdf(null);
+  };
 
   return (
     <div className="rounded-2xl border border-border p-4">
@@ -211,14 +275,7 @@ function ModuleEditor({
             onChange={(event) => setTitle(event.target.value)}
           />
           <div className="space-y-1 text-xs text-muted-foreground">
-            <p>
-              Resources:{" "}
-              {module.resources.length
-                ? module.resources
-                    .map((resource) => resourcesById.get(resource.id)?.title ?? resource.title)
-                    .join(", ")
-                : "None"}
-            </p>
+            <p>Resources: {module.resources.length || "None"}</p>
             <p>Quiz questions: {module.quiz?.questions.length ?? 0}</p>
           </div>
         </div>
@@ -235,6 +292,163 @@ function ModuleEditor({
             <Trash2 className="mr-2 h-4 w-4" />
             Delete
           </Button>
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-4 border-t border-border pt-6">
+        <div className="space-y-1">
+          <h4 className="text-sm font-semibold">Module PDFs</h4>
+          <p className="text-sm text-muted-foreground">
+            Upload lesson PDFs directly into this module without leaving the education page.
+          </p>
+        </div>
+
+        {module.resources.length ? (
+          <div className="space-y-3">
+            {module.resources.map((resource) => (
+              <div
+                key={resource.id}
+                className="flex flex-col gap-3 rounded-2xl border border-border p-4 lg:flex-row lg:items-start lg:justify-between"
+              >
+                <div className="space-y-2">
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant={resource.type === "PDF" ? "danger" : "info"}>
+                      {resource.type}
+                    </Badge>
+                    <Badge variant="muted">{resource.tag}</Badge>
+                    <Badge variant={resource.isVipOnly ? "default" : "muted"}>
+                      {resource.isVipOnly ? "VIP" : "Public"}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="font-medium">{resource.title}</p>
+                    <p className="text-sm text-muted-foreground">{resource.description}</p>
+                  </div>
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                    {resource.meta}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button asChild type="button" variant="outline" size="sm">
+                    <a href={resource.url} target="_blank" rel="noreferrer">
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Open
+                    </a>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    disabled={isDeletingResource(resource.id)}
+                    onClick={() => onDeleteResource(resource.id)}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {isDeletingResource(resource.id) ? "Deleting..." : "Delete"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-border px-4 py-6 text-sm text-muted-foreground">
+            No resources attached yet. Upload the first PDF for this module below.
+          </div>
+        )}
+
+        <div className="rounded-2xl border border-border bg-muted/10 p-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor={`resource-title-${module.id}`}>PDF title</Label>
+              <Input
+                id={`resource-title-${module.id}`}
+                placeholder="Weekly market structure playbook"
+                value={resourceTitle}
+                onChange={(event) => setResourceTitle(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tag</Label>
+              <Select value={resourceTag} onValueChange={(value) => setResourceTag(value as (typeof resourceTags)[number])}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {resourceTags.map((tag) => (
+                    <SelectItem key={tag} value={tag}>
+                      {tag}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor={`resource-description-${module.id}`}>Description</Label>
+              <Textarea
+                id={`resource-description-${module.id}`}
+                rows={3}
+                placeholder="What members should learn from this PDF."
+                value={resourceDescription}
+                onChange={(event) => setResourceDescription(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <Label>PDF upload</Label>
+              <PdfUploadButton
+                value={uploadedPdf}
+                onUpload={(url, key, name) => {
+                  setUploadedPdf({ url, key, name });
+                }}
+                onClear={() => {
+                  setUploadedPdf(null);
+                }}
+              />
+            </div>
+            <div className="rounded-2xl border border-border px-4 py-3 md:col-span-2">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-medium">VIP only</p>
+                  <p className="text-xs text-muted-foreground">
+                    Restrict this PDF to VIP members only.
+                  </p>
+                </div>
+                <Switch checked={resourceIsVipOnly} onCheckedChange={setResourceIsVipOnly} />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <Button
+              type="button"
+              disabled={
+                isCreatingResource ||
+                !resourceTitle.trim() ||
+                !resourceDescription.trim() ||
+                !uploadedPdf
+              }
+              onClick={async () => {
+                if (!uploadedPdf) {
+                  return;
+                }
+
+                try {
+                  await onCreateResource({
+                    moduleId: module.id,
+                    title: resourceTitle,
+                    description: resourceDescription,
+                    tag: resourceTag,
+                    isVipOnly: resourceIsVipOnly,
+                    file: uploadedPdf,
+                  });
+                  resetResourceDraft();
+                } catch {
+                  // Mutation-level toast already explains the failure.
+                }
+              }}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              {isCreatingResource ? "Attaching PDF..." : "Attach PDF To Module"}
+            </Button>
+          </div>
         </div>
       </div>
     </div>
@@ -254,6 +468,7 @@ export function EducationBuilder() {
   const invalidate = async () => {
     await queryClient.invalidateQueries({ queryKey: ["admin-education"] });
     await queryClient.invalidateQueries({ queryKey: ["education-courses"] });
+    await queryClient.invalidateQueries({ queryKey: ["resources"] });
   };
 
   const createCourse = useMutation({
@@ -349,10 +564,47 @@ export function EducationBuilder() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const resourcesById = useMemo(
-    () => new Map((query.data?.resources ?? []).map((resource) => [resource.id, resource])),
-    [query.data?.resources],
-  );
+  const createResource = useMutation({
+    mutationFn: (payload: {
+      moduleId: string;
+      title: string;
+      description: string;
+      tag: string;
+      isVipOnly: boolean;
+      file: UploadedPdf;
+    }) =>
+      fetchJson("/api/resources", {
+        method: "POST",
+        body: JSON.stringify({
+          title: payload.title,
+          description: payload.description,
+          type: "PDF",
+          url: payload.file.url,
+          fileKey: payload.file.key,
+          tag: payload.tag,
+          isVipOnly: payload.isVipOnly,
+          meta: payload.file.name,
+          moduleId: payload.moduleId,
+        }),
+      }),
+    onSuccess: async () => {
+      toast.success("PDF attached to module.");
+      await invalidate();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
+
+  const deleteResource = useMutation({
+    mutationFn: (resourceId: string) =>
+      fetchJson(`/api/resources/${resourceId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: async () => {
+      toast.success("Resource deleted.");
+      await invalidate();
+    },
+    onError: (error: Error) => toast.error(error.message),
+  });
 
   return (
     <div id="education-admin-desk" className="space-y-6">
@@ -427,6 +679,10 @@ export function EducationBuilder() {
               }
               onSaveModule={(payload) => updateModule.mutate(payload)}
               onDeleteModule={(moduleId) => deleteModule.mutate(moduleId)}
+              onCreateResource={async (payload) => {
+                await createResource.mutateAsync(payload);
+              }}
+              onDeleteResource={(resourceId) => deleteResource.mutate(resourceId)}
               isSavingCourse={
                 updateCourse.isPending && updateCourse.variables?.id === course.id
               }
@@ -442,7 +698,12 @@ export function EducationBuilder() {
               isDeletingModule={(moduleId) =>
                 deleteModule.isPending && deleteModule.variables === moduleId
               }
-              resourcesById={resourcesById}
+              isCreatingResource={(moduleId) =>
+                createResource.isPending && createResource.variables?.moduleId === moduleId
+              }
+              isDeletingResource={(resourceId) =>
+                deleteResource.isPending && deleteResource.variables === resourceId
+              }
             />
           ))}
         </div>

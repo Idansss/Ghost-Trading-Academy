@@ -83,8 +83,10 @@ Response format for the refactored endpoints:
 | DATABASE_URL | Yes | PostgreSQL connection string |
 | NEXTAUTH_SECRET | Yes | Random secret for NextAuth |
 | NEXTAUTH_URL | Yes | Base URL of your app. On Vercel this must be your production domain, not `http://localhost:3000` |
-| UPLOADTHING_SECRET | No | Uploadthing API secret |
-| UPLOADTHING_APP_ID | No | Uploadthing app ID |
+| NEXT_PUBLIC_SUPABASE_URL | No* | Supabase project URL for Storage (required for uploads) |
+| NEXT_PUBLIC_SUPABASE_ANON_KEY | No* | Supabase anon key (browser uploads) |
+| SUPABASE_SERVICE_ROLE_KEY | No* | Service role key for signed upload URLs on the server |
+| SUPABASE_STORAGE_BUCKET | No | Storage bucket name (defaults to `desk-media`) |
 | RESEND_API_KEY | No | Resend API key for emails |
 | RESEND_FROM_EMAIL | No | From address for emails |
 | NEXT_PUBLIC_CONTACT_LINK | No | WhatsApp or Telegram link for VIP upgrade |

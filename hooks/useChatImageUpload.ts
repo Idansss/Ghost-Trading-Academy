@@ -1,15 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { getUploadThingFileUrl, useUploadThing } from "@/lib/uploadthing";
+import { uploadFileToSupabaseStorage } from "@/lib/storage/upload-client";
 
 type UploadImageResult = {
   url: string;
   userId: string | null;
 };
 
-// AUDIT FIX: The original hook exposed no reset helper and returned only a raw
-// URL, which made it impossible for the composer to clear upload state safely.
 export function useChatImageUpload(): {
   uploadImage: (file: File | null | undefined) => Promise<UploadImageResult | null>;
   isUploading: boolean;
@@ -17,31 +15,25 @@ export function useChatImageUpload(): {
   reset: () => void;
 } {
   const [progress, setProgress] = useState(0);
-  const { startUpload, isUploading } = useUploadThing("chatImage", {
-    onUploadProgress: setProgress,
-  });
+  const [isUploading, setIsUploading] = useState(false);
 
   const uploadImage = async (file: File | null | undefined): Promise<UploadImageResult | null> => {
     if (!file) {
       return null;
     }
 
-    const uploadedFiles = await startUpload([file]);
-    const uploadedFile = uploadedFiles?.[0];
-
-    if (!uploadedFile) {
+    setIsUploading(true);
+    setProgress(0);
+    try {
+      const url = await uploadFileToSupabaseStorage(file, "chatImage", {
+        onProgress: setProgress,
+      });
+      return { url, userId: null };
+    } catch {
       return null;
+    } finally {
+      setIsUploading(false);
     }
-
-    const url = getUploadThingFileUrl(uploadedFile);
-    if (!url) {
-      return null;
-    }
-
-    return {
-      url,
-      userId: uploadedFile.serverData?.userId ?? null,
-    };
   };
 
   const reset = (): void => {

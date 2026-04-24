@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { requireAdmin, requireUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { assertTrustedImageUrl } from "@/lib/sanitize";
 import { apiError, safeJson } from "@/lib/utils";
 import { outlookSchema } from "@/lib/validators";
 
@@ -39,6 +40,8 @@ export async function POST(request: Request) {
       );
     }
 
+    assertTrustedImageUrl(parsed.data.chartImageUrl ?? null);
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -47,6 +50,7 @@ export async function POST(request: Request) {
       update: {
         marketBias: parsed.data.marketBias,
         biasExplanation: parsed.data.biasExplanation,
+        chartImageUrl: parsed.data.chartImageUrl || null,
         coinsToWatch: parsed.data.coinsToWatch as Prisma.InputJsonValue,
         levels: parsed.data.levels as Prisma.InputJsonValue,
         avoidToday: parsed.data.avoidToday as Prisma.InputJsonValue,
@@ -55,6 +59,7 @@ export async function POST(request: Request) {
         date: today,
         marketBias: parsed.data.marketBias,
         biasExplanation: parsed.data.biasExplanation,
+        chartImageUrl: parsed.data.chartImageUrl || null,
         coinsToWatch: parsed.data.coinsToWatch as Prisma.InputJsonValue,
         levels: parsed.data.levels as Prisma.InputJsonValue,
         avoidToday: parsed.data.avoidToday as Prisma.InputJsonValue,

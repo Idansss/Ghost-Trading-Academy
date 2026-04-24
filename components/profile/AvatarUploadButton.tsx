@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { getUploadThingFileUrl, useUploadThing } from "@/lib/uploadthing";
+import { uploadFileToSupabaseStorage } from "@/lib/storage/upload-client";
 
 export function AvatarUploadButton({
   name,
@@ -20,9 +20,7 @@ export function AvatarUploadButton({
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
-  const { startUpload, isUploading } = useUploadThing("avatarUploader", {
-    onUploadProgress: setProgress,
-  });
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFiles = async (files: FileList | File[]) => {
     const file = Array.from(files)[0];
@@ -31,14 +29,12 @@ export function AvatarUploadButton({
       return;
     }
 
+    setIsUploading(true);
+    setProgress(0);
     try {
-      const response = await startUpload([file]);
-      const uploaded = response?.[0];
-      const url = getUploadThingFileUrl(uploaded);
-
-      if (!url) {
-        throw new Error("Upload did not complete.");
-      }
+      const url = await uploadFileToSupabaseStorage(file, "avatar", {
+        onProgress: setProgress,
+      });
 
       onUpload(url);
       toast.success("Avatar uploaded. Save changes to apply it to your profile.");
@@ -46,6 +42,8 @@ export function AvatarUploadButton({
       toast.error(
         error instanceof Error ? error.message : "Failed to upload avatar.",
       );
+    } finally {
+      setIsUploading(false);
     }
   };
 

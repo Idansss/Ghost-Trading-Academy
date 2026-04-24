@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,6 +29,7 @@ function getDefaultValues(initialValues?: Partial<SignalValues> | null): SignalV
     timeframe: initialValues?.timeframe ?? "4H",
     rrRatio: initialValues?.rrRatio ?? 2,
     reasoning: initialValues?.reasoning ?? "",
+    chartImageUrl: initialValues?.chartImageUrl ?? "",
     status: initialValues?.status ?? "ACTIVE",
     isVipOnly: initialValues?.isVipOnly ?? true,
   };
@@ -159,6 +161,26 @@ export function PostSignalForm({
       <div className="space-y-2 md:col-span-2">
         <Label>Reasoning</Label>
         <Textarea {...form.register("reasoning")} />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <Label>Chart image</Label>
+        <ImageUploadField
+          imageUrl={form.watch("chartImageUrl") || null}
+          onUpload={(url) =>
+            form.setValue("chartImageUrl", url, {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+          onRemove={() =>
+            form.setValue("chartImageUrl", "", {
+              shouldDirty: true,
+              shouldValidate: true,
+            })
+          }
+          title="Upload signal chart"
+          description="Attach the chart screenshot members should see with this setup."
+        />
       </div>
       <div className="rounded-2xl border border-border px-4 py-3 md:col-span-2">
         <div className="flex items-center justify-between gap-3">

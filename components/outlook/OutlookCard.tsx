@@ -1,5 +1,6 @@
 import type { DailyOutlook } from "@prisma/client";
 import { format } from "date-fns";
+import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -60,6 +61,25 @@ export function OutlookCard({
           </div>
         </CardContent>
       </Card>
+
+      {outlook.chartImageUrl ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Bias Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="relative h-[320px] overflow-hidden rounded-3xl border border-border bg-muted/20">
+              <Image
+                src={outlook.chartImageUrl}
+                alt="Daily outlook chart context"
+                fill
+                className="object-contain"
+                sizes="(max-width: 1024px) 100vw, 80vw"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card>

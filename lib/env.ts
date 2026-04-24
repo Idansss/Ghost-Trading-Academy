@@ -17,8 +17,31 @@ const serverEnvSchema = z.object({
   // A min(1) check allowed single-character secrets through at startup.
   NEXTAUTH_SECRET: z.string().min(32, "NEXTAUTH_SECRET must be at least 32 characters."),
   NEXTAUTH_URL: z.string().url("NEXTAUTH_URL must be a valid URL."),
-  UPLOADTHING_SECRET: z.string().min(1).optional(),
-  UPLOADTHING_APP_ID: z.string().min(1).optional(),
+  NEXT_PUBLIC_SUPABASE_URL: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || undefined),
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || undefined),
+  SUPABASE_URL: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || undefined),
+  SUPABASE_SERVICE_ROLE_KEY: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || undefined),
+  SUPABASE_STORAGE_BUCKET: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => v || undefined),
   RESEND_API_KEY: z.string().min(1).optional(),
   RESEND_FROM_EMAIL: z.string().email().optional(),
   NEXT_PUBLIC_CONTACT_LINK: z.string().url().optional(),
@@ -27,8 +50,7 @@ const serverEnvSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
-  // AUDIT FIX: Chat image validation requires a canonical UploadThing CDN
-  // domain, so the env contract now exposes both server and public variants.
+  // Legacy UploadThing CDN URLs may still exist in the database.
   UPLOADTHING_CDN_DOMAIN: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
   NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
   // AUDIT FIX: Use .optional().or(z.literal("")) so that empty strings in .env
@@ -45,8 +67,11 @@ const parsedEnv = serverEnvSchema.parse({
   DATABASE_URL: process.env.DATABASE_URL,
   NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET,
   NEXTAUTH_URL: process.env.NEXTAUTH_URL,
-  UPLOADTHING_SECRET: process.env.UPLOADTHING_SECRET,
-  UPLOADTHING_APP_ID: process.env.UPLOADTHING_APP_ID,
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET,
   RESEND_API_KEY: process.env.RESEND_API_KEY,
   RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
   NEXT_PUBLIC_CONTACT_LINK: process.env.NEXT_PUBLIC_CONTACT_LINK,
@@ -65,12 +90,18 @@ const parsedEnv = serverEnvSchema.parse({
   NEXT_PUBLIC_PUSHER_CLUSTER: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
 });
 
+const supabasePublicUrl = parsedEnv.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServerUrl = parsedEnv.SUPABASE_URL ?? supabasePublicUrl;
+
 export const env = {
   databaseUrl: parsedEnv.DATABASE_URL,
   nextAuthSecret: parsedEnv.NEXTAUTH_SECRET,
   nextAuthUrl: parsedEnv.NEXTAUTH_URL,
-  uploadthingSecret: parsedEnv.UPLOADTHING_SECRET,
-  uploadthingAppId: parsedEnv.UPLOADTHING_APP_ID,
+  nextPublicSupabaseUrl: supabasePublicUrl,
+  nextPublicSupabaseAnonKey: parsedEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+  supabaseUrl: supabaseServerUrl,
+  supabaseServiceRoleKey: parsedEnv.SUPABASE_SERVICE_ROLE_KEY,
+  supabaseStorageBucket: parsedEnv.SUPABASE_STORAGE_BUCKET ?? "desk-media",
   resendApiKey: parsedEnv.RESEND_API_KEY,
   resendFromEmail: parsedEnv.RESEND_FROM_EMAIL ?? "noreply@ghostvip.com",
   contactLink: parsedEnv.NEXT_PUBLIC_CONTACT_LINK ?? "#",

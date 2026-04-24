@@ -4,13 +4,12 @@ import { auth } from "@/lib/auth";
 import {
   type ChatMessageWithRelations,
   getChatChannelName,
-  isTrustedUploadthingUrl,
   mapMessage,
   requireChannelAccess,
 } from "@/lib/chat";
 import { pusherServer } from "@/lib/pusher";
 import { prisma } from "@/lib/prisma";
-import { sanitizeHtml } from "@/lib/sanitize";
+import { isTrustedMediaUrl, sanitizeHtml } from "@/lib/sanitize";
 import { sendMessageSchema } from "@/lib/validations/chat";
 import {
   isOptionalPrismaSchemaError,
@@ -168,7 +167,7 @@ export async function GET(
   }
 }
 
-// AUDIT FIX: Message creation now validates UploadThing image URLs, enforces the
+// AUDIT FIX: Message creation now validates trusted image URLs, enforces the
 // announcement read-only rule, updates channel activity, sends full realtime
 // payloads, and creates notifications only for DMs/@mentions/announcements.
 export async function POST(
@@ -204,8 +203,11 @@ export async function POST(
       );
     }
 
-    if (parsed.data.imageUrl && !isTrustedUploadthingUrl(parsed.data.imageUrl)) {
-      return NextResponse.json({ error: "Image URL must be from UploadThing CDN." }, { status: 400 });
+    if (parsed.data.imageUrl && !isTrustedMediaUrl(parsed.data.imageUrl)) {
+      return NextResponse.json(
+        { error: "Image URL must be from trusted storage (Supabase or legacy CDN)." },
+        { status: 400 },
+      );
     }
 
     if (parsed.data.replyToId) {

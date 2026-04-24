@@ -31,11 +31,6 @@ export const DEFAULT_CHAT_CHANNEL_SLUGS = [
   "announcements",
 ] as const;
 
-// AUDIT FIX: Upload trust previously accepted any UploadThing-like hostname.
-// Production validation now supports an explicit CDN domain override and only
-// allows URLs from the configured UploadThing domain(s).
-const DEFAULT_UPLOADTHING_HOSTS = ["utfs.io", "ufs.sh"];
-
 // AUDIT FIX: Replaced inline channel strings with helpers so routes and hooks
 // cannot drift apart on naming convention.
 export function getChatChannelName(channelId: string): string {
@@ -79,30 +74,6 @@ export async function generateUniqueChannelSlug(name: string): Promise<string> {
 
   const suffix = Math.random().toString(36).slice(2, 8);
   return `${baseSlug}-${suffix}`;
-}
-
-// AUDIT FIX: Image trust now checks against the configured CDN domain and only
-// falls back to UploadThing's known hostnames when the env var is absent.
-export function isTrustedUploadthingUrl(url: string): boolean {
-  try {
-    const parsedUrl = new URL(url);
-    const configuredDomain =
-      process.env.UPLOADTHING_CDN_DOMAIN ??
-      process.env.NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN ??
-      "";
-    const allowedHosts = configuredDomain
-      ? [configuredDomain.replace(/^https?:\/\//, "").replace(/\/$/, "")]
-      : DEFAULT_UPLOADTHING_HOSTS;
-
-    return allowedHosts.some(
-      (host) =>
-        parsedUrl.hostname === host ||
-        parsedUrl.hostname.endsWith(`.${host}`) ||
-        url.startsWith(`https://${host}`),
-    );
-  } catch {
-    return false;
-  }
 }
 
 // AUDIT FIX: Reaction grouping previously omitted hasReacted, forcing the

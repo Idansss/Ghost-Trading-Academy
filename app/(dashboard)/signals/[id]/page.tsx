@@ -1,5 +1,6 @@
 import { ArrowLeft, ArrowDownRight, ArrowUpRight, CheckCircle2, Lightbulb } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { SignalChartPanel } from "@/components/charts/SignalChartPanel";
 import { SignalPositionSizingSheet } from "@/components/signals/SignalPositionSizingSheet";
@@ -140,6 +141,26 @@ export default async function SignalDetailPage({
               </div>
             </div>
           </div>
+
+          {signal.chartImageUrl ? (
+            <div className="space-y-3">
+              <div>
+                <p className="text-sm font-medium text-foreground">Uploaded chart</p>
+                <p className="text-sm text-muted-foreground">
+                  Admin-provided chart context for this setup.
+                </p>
+              </div>
+              <div className="relative h-[360px] overflow-hidden rounded-3xl border border-border bg-muted/20">
+                <Image
+                  src={signal.chartImageUrl}
+                  alt={`${signal.coin} uploaded chart`}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 1280px) 100vw, 80vw"
+                />
+              </div>
+            </div>
+          ) : null}
         </CardContent>
       </Card>
 

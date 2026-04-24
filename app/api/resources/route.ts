@@ -1,6 +1,7 @@
 import { requireAdmin, requireUser } from "@/lib/auth";
 import { createNotification } from "@/lib/actions/notifications";
 import { prisma } from "@/lib/prisma";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { apiError, safeJson } from "@/lib/utils";
 import { resourceSchema } from "@/lib/validators";
 
@@ -38,7 +39,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const user = await requireAdmin();
-    const body = await safeJson<unknown>(request);
+    const body = await safeJson<Record<string, unknown>>(request);
     const parsed = resourceSchema.safeParse(body);
 
     // AUDIT FIX: Validation error shape changed from { message, errors } to
@@ -50,10 +51,28 @@ export async function POST(request: Request) {
       );
     }
 
+    const moduleId =
+      typeof body.moduleId === "string" && body.moduleId.trim().length > 0
+        ? body.moduleId
+        : null;
+
+    if (moduleId) {
+      const courseModule = await prisma.courseModule.findUnique({
+        where: { id: moduleId },
+        select: { id: true },
+      });
+
+      if (!courseModule) {
+        return apiError("Course module not found.", 404);
+      }
+    }
+
     const resource = await prisma.resource.create({
       data: {
         ...parsed.data,
+        description: sanitizeHtml(parsed.data.description),
         fileKey: parsed.data.fileKey ?? null,
+        moduleId,
         uploadedBy: user.id,
       },
     });

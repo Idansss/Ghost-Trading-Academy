@@ -1,9 +1,46 @@
 import { AppError } from "@/server/core/app-error";
+import { env } from "@/lib/env";
 
-const trustedImageHosts = new Set([
-  "utfs.io",
-  "uploadthing.com",
-]);
+const legacyUploadthingHosts = new Set(["utfs.io", "uploadthing.com", "ufs.sh"]);
+
+function isLegacyUploadthingUrl(url: URL): boolean {
+  const configured = env.uploadthingCdnDomain?.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (
+    configured &&
+    (url.hostname === configured || url.hostname.endsWith(`.${configured}`))
+  ) {
+    return true;
+  }
+  return legacyUploadthingHosts.has(url.hostname) || url.hostname.endsWith(".ufs.sh");
+}
+
+function isSupabasePublicObjectUrl(url: URL): boolean {
+  const base = env.nextPublicSupabaseUrl;
+  if (!base) {
+    return false;
+  }
+  let expectedHost: string;
+  try {
+    expectedHost = new URL(base).hostname;
+  } catch {
+    return false;
+  }
+  if (url.hostname !== expectedHost) {
+    return false;
+  }
+  const bucket = env.supabaseStorageBucket;
+  const prefix = `/storage/v1/object/public/${bucket}/`;
+  return url.pathname.startsWith(prefix);
+}
+
+export function isTrustedMediaUrl(urlString: string): boolean {
+  try {
+    const url = new URL(urlString);
+    return isLegacyUploadthingUrl(url) || isSupabasePublicObjectUrl(url);
+  } catch {
+    return false;
+  }
+}
 
 function stripMarkup(value: string) {
   return value
@@ -21,19 +58,17 @@ function stripMarkup(value: string) {
 }
 
 export function sanitizeHtml(value: string) {
-  // Server routes render these fields back as plain text, not injected HTML.
-  // Keep a lightweight text sanitizer here to avoid DOM-based server deps.
   return stripMarkup(value);
 }
 
-export function assertTrustedImageUrl(url: string | null | undefined) {
+export function assertTrustedImageUrl(
+  url: string | null | undefined,
+  field = "chartImageUrl",
+) {
   if (!url) return;
-  const parsed = new URL(url);
-  if (!trustedImageHosts.has(parsed.hostname)) {
-    // AUDIT FIX: Replaced generic Error with AppError.badRequest() so the
-    // createRouteHandler error boundary maps it to 400 instead of 500.
-    throw AppError.badRequest("Image URL must come from a trusted CDN.", [
-      { field: "chartImageUrl", message: "Image must be hosted on UploadThing." },
+  if (!isTrustedMediaUrl(url)) {
+    throw AppError.badRequest("Image URL must come from trusted storage.", [
+      { field, message: "Image must be hosted on an allowed CDN." },
     ]);
   }
 }

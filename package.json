@@ -42,6 +42,7 @@
     "@radix-ui/react-tabs": "^1.1.2",
     "@react-email/components": "^1.0.12",
     "@react-pdf/renderer": "^4.5.1",
+    "@supabase/supabase-js": "^2.104.1",
     "@tanstack/react-query": "^5.62.7",
     "@tanstack/react-query-devtools": "^5.62.7",
     "@tanstack/react-virtual": "^3.13.24",
@@ -51,7 +52,6 @@
     "@tiptap/extension-underline": "^2.10.3",
     "@tiptap/react": "^2.10.3",
     "@tiptap/starter-kit": "^2.10.3",
-    "@uploadthing/react": "^7.3.0",
     "@upstash/ratelimit": "^2.0.8",
     "@upstash/redis": "^1.37.0",
     "bcryptjs": "^2.4.3",
@@ -82,7 +82,6 @@
     "sonner": "^1.7.2",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "uploadthing": "^7.4.4",
     "zod": "^3.24.1",
     "zustand": "^5.0.3"
   },

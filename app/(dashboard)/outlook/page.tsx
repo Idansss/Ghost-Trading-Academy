@@ -57,6 +57,7 @@ export default function OutlookPage() {
         <OutlookCard
           outlook={{
             ...data.outlook,
+            chartImageUrl: data.outlook.chartImageUrl ?? null,
             coinsToWatch: data.outlook.coinsToWatch as Array<{ coin: string; note: string }>,
             levels: data.outlook.levels as Array<{
               coin: string;

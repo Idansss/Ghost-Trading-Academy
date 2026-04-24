@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +53,7 @@ function getDefaultValues(initialValues?: Partial<OutlookValues> | null): Outloo
   return {
     marketBias: initialValues?.marketBias ?? "NEUTRAL",
     biasExplanation: initialValues?.biasExplanation ?? "",
+    chartImageUrl: initialValues?.chartImageUrl ?? "",
     coinsToWatch: initialValues?.coinsToWatch ?? [{ coin: "", note: "" }],
     levels:
       initialValues?.levels ?? [{ coin: "", resistance: "", support: "" }],
@@ -134,6 +136,27 @@ export function OutlookForm({
           className="min-h-[96px] resize-y"
           placeholder="Explain the market structure, key context, and what is driving today's bias..."
           {...form.register("biasExplanation")}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label>Bias chart image</Label>
+        <ImageUploadField
+          imageUrl={form.watch("chartImageUrl") || null}
+          onUpload={(url) => {
+            form.setValue("chartImageUrl", url, {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }}
+          onRemove={() => {
+            form.setValue("chartImageUrl", "", {
+              shouldDirty: true,
+              shouldValidate: true,
+            });
+          }}
+          title="Upload market bias image"
+          description="Attach the chart or visual context members should review with this outlook."
         />
       </div>
 

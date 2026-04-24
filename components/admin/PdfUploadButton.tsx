@@ -4,7 +4,10 @@ import { CheckCircle2, CloudUpload, RefreshCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { getUploadThingFilePayload, useUploadThing } from "@/lib/uploadthing";
+import {
+  objectPathFromSupabasePublicUrl,
+  uploadFileToSupabaseStorage,
+} from "@/lib/storage/upload-client";
 
 type UploadedFile = {
   url: string;
@@ -27,14 +30,11 @@ export function PdfUploadButton({
   const [uploadedFile, setUploadedFile] = useState<UploadedFile | null>(
     value ?? null,
   );
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setUploadedFile(value ?? null);
   }, [value]);
-
-  const { startUpload, isUploading } = useUploadThing("pdfUploader", {
-    onUploadProgress: setProgress,
-  });
 
   const handleFiles = async (files: FileList | File[]) => {
     const file = Array.from(files)[0];
@@ -45,15 +45,14 @@ export function PdfUploadButton({
 
     setError(null);
     setProgress(0);
+    setIsUploading(true);
 
     try {
-      const response = await startUpload([file]);
-      const uploaded = response?.[0];
-      const nextFile = getUploadThingFilePayload(uploaded);
-
-      if (!nextFile) {
-        throw new Error("Upload did not complete.");
-      }
+      const url = await uploadFileToSupabaseStorage(file, "pdf", {
+        onProgress: setProgress,
+      });
+      const key = objectPathFromSupabasePublicUrl(url);
+      const nextFile: UploadedFile = { url, key, name: file.name };
 
       setUploadedFile(nextFile);
       onUpload(nextFile.url, nextFile.key, nextFile.name);
@@ -63,6 +62,8 @@ export function PdfUploadButton({
           ? uploadError.message
           : "Failed to upload PDF.",
       );
+    } finally {
+      setIsUploading(false);
     }
   };
 

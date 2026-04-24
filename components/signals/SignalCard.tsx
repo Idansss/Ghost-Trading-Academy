@@ -4,6 +4,7 @@ import type { Signal } from "@prisma/client";
 import { ArrowUpRight, ArrowDownRight, CheckCircle2, Circle, Lightbulb } from "lucide-react";
 import { useState } from "react";
 import { formatDistanceToNow } from "date-fns";
+import Image from "next/image";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -122,6 +123,18 @@ export function SignalCard({ signal }: { signal: SignalWithTaken }) {
             <p className="text-sm text-muted-foreground">{signal.reasoning}</p>
           </div>
         </div>
+
+        {signal.chartImageUrl ? (
+          <div className="relative h-64 overflow-hidden rounded-3xl border border-border bg-muted/20">
+            <Image
+              src={signal.chartImageUrl}
+              alt={`${signal.coin} chart`}
+              fill
+              className="object-contain"
+              sizes="(max-width: 1024px) 100vw, 80vw"
+            />
+          </div>
+        ) : null}
 
         <div className="flex flex-wrap gap-2">
           <Badge variant="warning">{signal.riskLevel} Risk</Badge>

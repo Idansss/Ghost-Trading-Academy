@@ -11,6 +11,18 @@ const uploadthingDomain = (
   .replace(/^https?:\/\//, "")
   .replace(/\/$/, "");
 
+function supabaseImageHost() {
+  const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!raw) return null;
+  try {
+    return new URL(raw).hostname;
+  } catch {
+    return null;
+  }
+}
+
+const supabaseHost = supabaseImageHost();
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -27,6 +39,14 @@ const nextConfig = {
             {
               protocol: "https",
               hostname: uploadthingDomain,
+            },
+          ]
+        : []),
+      ...(supabaseHost
+        ? [
+            {
+              protocol: "https",
+              hostname: supabaseHost,
             },
           ]
         : []),

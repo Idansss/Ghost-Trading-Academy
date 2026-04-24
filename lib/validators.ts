@@ -74,6 +74,7 @@ export const signalSchema = z.object({
   timeframe: z.string().min(1),
   rrRatio: z.coerce.number().nonnegative(),
   reasoning: z.string().min(10),
+  chartImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
   status: z.nativeEnum(SignalStatus).default(SignalStatus.ACTIVE),
   isVipOnly: z.boolean().default(true),
 });
@@ -113,6 +114,7 @@ export const signalIdParamsSchema = z.object({
 export const outlookSchema = z.object({
   marketBias: z.nativeEnum(MarketBias),
   biasExplanation: z.string().min(20),
+  chartImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
   coinsToWatch: z
     .array(
       z.object({
