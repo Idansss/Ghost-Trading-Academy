@@ -1,11 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { BookOpen, Plus, Settings2 } from "lucide-react";
+import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { EducationBuilder } from "@/components/admin/EducationBuilder";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EducationSkeleton } from "@/components/skeletons/EducationSkeleton";
@@ -60,7 +60,6 @@ type EducationCourse = {
 type CoursesResponse = { courses: EducationCourse[] };
 
 export default function EducationPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [quizAnswers, setQuizAnswers] = useState<Record<string, Record<number, number>>>({});
@@ -81,6 +80,10 @@ export default function EducationPage() {
     },
   });
 
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <PageTransition>
       <div className="space-y-6">
@@ -91,22 +94,20 @@ export default function EducationPage() {
           action={
             isAdmin ? (
               <div className="flex flex-wrap gap-2">
-                <Button asChild variant="outline">
-                  <Link href="/admin/education">
-                    <Settings2 className="mr-2 h-4 w-4" />
-                    Manage Courses
-                  </Link>
+                <Button variant="outline" onClick={() => scrollToSection("education-admin-desk")}>
+                  <Settings2 className="mr-2 h-4 w-4" />
+                  Manage Courses
                 </Button>
-                <Button asChild>
-                  <Link href="/admin/education">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create Course
-                  </Link>
+                <Button onClick={() => scrollToSection("education-course-create")}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Course
                 </Button>
               </div>
             ) : null
           }
         />
+
+        {isAdmin ? <EducationBuilder /> : null}
 
         {isLoading ? (
           <EducationSkeleton />
@@ -228,7 +229,7 @@ export default function EducationPage() {
               isAdmin
                 ? {
                     label: "Create first course",
-                    onClick: () => router.push("/admin/education"),
+                    onClick: () => scrollToSection("education-course-create"),
                   }
                 : undefined
             }

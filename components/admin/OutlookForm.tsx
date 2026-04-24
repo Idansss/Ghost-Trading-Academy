@@ -63,10 +63,12 @@ export function OutlookForm({
   initialValues,
   onSubmit,
   isSubmitting,
+  redirectTo = "/admin",
 }: {
   initialValues?: Partial<DailyOutlook> | Partial<OutlookValues> | null;
   onSubmit: (values: OutlookValues) => Promise<void>;
   isSubmitting?: boolean;
+  redirectTo?: string | null;
 }) {
   const router = useRouter();
   const form = useForm<OutlookValues>({
@@ -95,8 +97,12 @@ export function OutlookForm({
       className="grid gap-6"
       onSubmit={form.handleSubmit(async (values) => {
         await onSubmit(values);
-        toast.success("Today's outlook has been posted.");
-        router.push("/admin");
+        toast.success(
+          initialValues ? "Today's outlook has been updated." : "Today's outlook has been posted.",
+        );
+        if (redirectTo) {
+          router.push(redirectTo);
+        }
         router.refresh();
       })}
     >
@@ -261,7 +267,11 @@ export function OutlookForm({
 
       <div className="flex justify-end">
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Publishing..." : "Post outlook"}
+          {isSubmitting
+            ? "Publishing..."
+            : initialValues
+              ? "Update outlook"
+              : "Post outlook"}
         </Button>
       </div>
     </form>

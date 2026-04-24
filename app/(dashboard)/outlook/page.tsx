@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Plus, Settings2 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { OutlookEditor } from "@/components/admin/OutlookEditor";
 import { PageTransition } from "@/components/layout/PageTransition";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -13,10 +12,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useOutlook } from "@/hooks/useOutlook";
 
 export default function OutlookPage() {
-  const router = useRouter();
   const { data: session } = useSession();
   const { data, isLoading } = useOutlook(undefined, true);
   const isAdmin = session?.user.role === "ADMIN";
+
+  const scrollToSection = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <PageTransition>
@@ -28,22 +30,26 @@ export default function OutlookPage() {
         action={
           isAdmin ? (
             <div className="flex flex-wrap gap-2">
-              <Button asChild variant="outline">
-                <Link href="/admin/outlook">
-                  <Settings2 className="mr-2 h-4 w-4" />
-                  Manage Outlook
-                </Link>
+              <Button variant="outline" onClick={() => scrollToSection("outlook-admin-desk")}>
+                <Settings2 className="mr-2 h-4 w-4" />
+                Manage Outlook
               </Button>
-              <Button asChild>
-                <Link href="/admin/outlook">
-                  <Plus className="mr-2 h-4 w-4" />
-                  {data?.outlook ? "Update Outlook" : "Post Outlook"}
-                </Link>
+              <Button onClick={() => scrollToSection("outlook-admin-desk")}>
+                <Plus className="mr-2 h-4 w-4" />
+                {data?.outlook ? "Update Outlook" : "Post Outlook"}
               </Button>
             </div>
           ) : null
         }
       />
+
+      {isAdmin ? (
+        <OutlookEditor
+          title={data?.outlook ? "Update Today's Outlook" : "Post Today's Outlook"}
+          description="Publish the desk bias and key levels directly from the live outlook page."
+          redirectTo={null}
+        />
+      ) : null}
 
       {isLoading ? (
         <Skeleton className="h-[560px] w-full" />
@@ -68,7 +74,7 @@ export default function OutlookPage() {
             isAdmin
               ? {
                   label: "Post today's outlook",
-                  onClick: () => router.push("/admin/outlook"),
+                  onClick: () => scrollToSection("outlook-admin-desk"),
                 }
               : undefined
           }
