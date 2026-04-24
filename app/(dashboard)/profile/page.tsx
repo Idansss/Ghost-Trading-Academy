@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ type ProfileValues = z.infer<typeof profileSchema>;
 
 export default function ProfilePage() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const { update } = useSession();
   const { data, isError, refetch } = useQuery({
     queryKey: ["profile"],
@@ -95,6 +97,8 @@ export default function ProfilePage() {
           riskPerTrade: payload.riskPerTrade,
         },
       });
+      // Server layouts read `auth()` once per RSC render; refresh so Topbar/Sidebar get the new JWT.
+      router.refresh();
     },
   });
 

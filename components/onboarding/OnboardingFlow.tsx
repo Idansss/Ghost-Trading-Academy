@@ -171,9 +171,15 @@ export function OnboardingFlow({
           newPassword: "",
         }),
       }),
-    onSuccess: async () => {
+    onSuccess: async (_data, values) => {
       await completeStepMutation.mutateAsync("PROFILE_SETUP");
-      await update();
+      await update({
+        user: {
+          name: values.name,
+          avatarUrl: values.avatarUrl || null,
+        },
+      });
+      router.refresh();
       toast.success("Profile step completed.");
     },
     onError: (error: Error) => toast.error(error.message),
