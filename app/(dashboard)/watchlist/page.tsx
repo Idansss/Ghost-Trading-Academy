@@ -24,18 +24,24 @@ export default function WatchlistPage() {
     refetchInterval: 60_000,
   });
 
+  const watchlistSymbols = useMemo(
+    () =>
+      (watchlistQuery.data?.items ?? [])
+        .map((item) => item.symbol)
+        .slice()
+        .sort(),
+    [watchlistQuery.data?.items],
+  );
+
   const tickerQuery = useQuery({
-    queryKey: ["watchlist-ticker", watchlistQuery.data?.items.map((item) => item.symbol).join(",")],
-    enabled: Boolean(watchlistQuery.data?.items.length),
+    queryKey: ["watchlist-ticker", watchlistSymbols],
+    enabled: watchlistSymbols.length > 0,
     queryFn: async () => {
-      const values = await Promise.all(
-        (watchlistQuery.data?.items ?? []).map(async (item) => {
-          const response = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${item.symbol}`);
-          if (!response.ok) return null;
-          return (await response.json()) as { symbol: string; lastPrice: string; priceChangePercent: string };
-        }),
-      );
-      return values.filter(Boolean) as Array<{ symbol: string; lastPrice: string; priceChangePercent: string }>;
+      const params = new URLSearchParams({ symbols: watchlistSymbols.join(",") });
+      const response = await fetchJson<{
+        tickers: Array<{ symbol: string; lastPrice: string; priceChangePercent: string }>;
+      }>(`/api/market/ticker-24hr?${params.toString()}`);
+      return response.tickers;
     },
     refetchInterval: 10_000,
   });

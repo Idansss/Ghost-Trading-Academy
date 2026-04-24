@@ -105,37 +105,59 @@ export function MessageComposer({
   const canSend = Boolean(body.trim() || image?.remoteUrl) && !isUploading && !isCoolingDown;
 
   const submitOutgoingMessage = async (): Promise<void> => {
-    setIsCoolingDown(true);
-    try {
-      await onSubmit({
-        body: body.trim() || undefined,
-        image:
-          image?.remoteUrl && !editingMessage
-            ? {
-                url: image.remoteUrl,
-                width: image.width,
-                height: image.height,
-                name: image.name,
-              }
-            : undefined,
-        replyToId: replyTo?.id ?? null,
-        replyTo: replyTo
+    const trimmedBody = body.trim();
+    const pendingImage = image;
+    const pendingReplyTo = replyTo;
+    const pendingEditingMessage = editingMessage;
+
+    const payload = {
+      body: trimmedBody || undefined,
+      image:
+        pendingImage?.remoteUrl && !pendingEditingMessage
           ? {
-              id: replyTo.id,
-              body: replyTo.body,
-              imageUrl: replyTo.imageUrl,
-              hasImage: Boolean(replyTo.imageUrl),
-              author: { name: replyTo.author.name },
+              url: pendingImage.remoteUrl,
+              width: pendingImage.width,
+              height: pendingImage.height,
+              name: pendingImage.name,
             }
-          : null,
-        editMessageId: editingMessage?.id,
-      });
+          : undefined,
+      replyToId: pendingReplyTo?.id ?? null,
+      replyTo: pendingReplyTo
+        ? {
+            id: pendingReplyTo.id,
+            body: pendingReplyTo.body,
+            imageUrl: pendingReplyTo.imageUrl,
+            hasImage: Boolean(pendingReplyTo.imageUrl),
+            author: { name: pendingReplyTo.author.name },
+          }
+        : null,
+      editMessageId: pendingEditingMessage?.id,
+    };
+
+    // Clear text immediately for faster perceived send.
+    if (!pendingEditingMessage) {
       setBody("");
-      clearImage();
-      onCancelReply();
-      onCancelEdit();
       onTyping(false);
       textareaRef.current?.focus();
+    }
+
+    setIsCoolingDown(true);
+    try {
+      await onSubmit(payload);
+      if (pendingEditingMessage) {
+        setBody("");
+        onCancelEdit();
+        onTyping(false);
+        textareaRef.current?.focus();
+      } else {
+        clearImage();
+        onCancelReply();
+      }
+    } catch {
+      // If send fails, restore the draft so the user can retry quickly.
+      if (!pendingEditingMessage) {
+        setBody(trimmedBody);
+      }
     } finally {
       // If onSubmit throws (e.g. network error), still clear cooldown — otherwise
       // isCoolingDown stays true forever and the send button stays disabled.
