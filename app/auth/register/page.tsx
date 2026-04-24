@@ -87,7 +87,7 @@ function RegisterContent() {
         </div>
         <Card>
           <CardHeader className="space-y-2 text-center">
-            <CardTitle className="text-2xl">Join Ghost VIP</CardTitle>
+            <CardTitle className="text-2xl">Create your account</CardTitle>
             <p className="text-sm text-muted-foreground">
               Create your member account and get access to the trading desk.
             </p>

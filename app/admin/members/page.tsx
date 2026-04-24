@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageTransition } from "@/components/layout/PageTransition";
+import { roleDisplayName } from "@/lib/role-display";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -88,6 +89,8 @@ const defaultCreateState: CreateMemberState = {
   temporaryPassword: "",
   role: "MEMBER",
 };
+
+const ASSIGNABLE_ROLES: Role[] = ["MEMBER", "PREMIUM", "ADMIN"];
 
 function roleBadgeVariant(role: Role) {
   return role === "MEMBER" ? "muted" : "default";
@@ -240,15 +243,15 @@ export default function AdminMembersPage() {
                                     })
                                   }
                                 >
-                                  {["MEMBER", "VIP", "ADMIN"].map((role) => (
-                                    <option key={role} value={role}>
-                                      {role}
+                                  {ASSIGNABLE_ROLES.map((roleOption) => (
+                                    <option key={roleOption} value={roleOption}>
+                                      {roleDisplayName(roleOption)}
                                     </option>
                                   ))}
                                 </select>
                                 <Badge variant={roleBadgeVariant(user.role)}>
                                   <span className="status-dot bg-current" />
-                                  {user.role}
+                                  {roleDisplayName(user.role)}
                                 </Badge>
                               </div>
                             </TableCell>
@@ -365,9 +368,9 @@ export default function AdminMembersPage() {
                     }))
                   }
                 >
-                  {["MEMBER", "VIP", "ADMIN"].map((role) => (
-                    <option key={role} value={role}>
-                      {role}
+                  {ASSIGNABLE_ROLES.map((roleOption) => (
+                    <option key={roleOption} value={roleOption}>
+                      {roleDisplayName(roleOption)}
                     </option>
                   ))}
                 </select>
@@ -446,7 +449,7 @@ export default function AdminMembersPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>
                 {pendingRoleChange
-                  ? `Change ${pendingRoleChange.user.name} to ${pendingRoleChange.role}?`
+                  ? `Change ${pendingRoleChange.user.name} to ${roleDisplayName(pendingRoleChange.role)}?`
                   : "Change role?"}
               </AlertDialogTitle>
               <AlertDialogDescription>

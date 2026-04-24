@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { fetchJson } from "@/lib/client-api";
 
-const SESSION_STORAGE_KEY = "ghost-vip-push-prompt-dismissed";
+const SESSION_STORAGE_KEY = "ghost-trading-academy-push-prompt-dismissed";
 
 type OneSignalSDK = {
   init: (options: Record<string, unknown>) => Promise<void>;

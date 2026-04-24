@@ -31,7 +31,7 @@ type ModuleResource = {
   url: string;
   tag: string;
   meta: string;
-  isVipOnly: boolean;
+  isPremiumOnly: boolean;
   fileKey: string | null;
 };
 
@@ -87,7 +87,7 @@ function CourseEditor({
     title: string;
     description: string;
     tag: string;
-    isVipOnly: boolean;
+    isPremiumOnly: boolean;
     file: UploadedPdf;
   }) => Promise<void>;
   onDeleteResource: (resourceId: string) => void;
@@ -240,7 +240,7 @@ function ModuleEditor({
     title: string;
     description: string;
     tag: string;
-    isVipOnly: boolean;
+    isPremiumOnly: boolean;
     file: UploadedPdf;
   }) => Promise<void>;
   onDeleteResource: (resourceId: string) => void;
@@ -253,14 +253,14 @@ function ModuleEditor({
   const [resourceTitle, setResourceTitle] = useState("");
   const [resourceDescription, setResourceDescription] = useState("");
   const [resourceTag, setResourceTag] = useState<(typeof resourceTags)[number]>("Foundation");
-  const [resourceIsVipOnly, setResourceIsVipOnly] = useState(true);
+  const [resourceIsPremiumOnly, setResourceIsPremiumOnly] = useState(true);
   const [uploadedPdf, setUploadedPdf] = useState<UploadedPdf | null>(null);
 
   const resetResourceDraft = () => {
     setResourceTitle("");
     setResourceDescription("");
     setResourceTag("Foundation");
-    setResourceIsVipOnly(true);
+    setResourceIsPremiumOnly(true);
     setUploadedPdf(null);
   };
 
@@ -316,8 +316,8 @@ function ModuleEditor({
                       {resource.type}
                     </Badge>
                     <Badge variant="muted">{resource.tag}</Badge>
-                    <Badge variant={resource.isVipOnly ? "default" : "muted"}>
-                      {resource.isVipOnly ? "VIP" : "Public"}
+                    <Badge variant={resource.isPremiumOnly ? "default" : "muted"}>
+                      {resource.isPremiumOnly ? "Premium" : "Public"}
                     </Badge>
                   </div>
                   <div>
@@ -406,12 +406,12 @@ function ModuleEditor({
             <div className="rounded-2xl border border-border px-4 py-3 md:col-span-2">
               <div className="flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-medium">VIP only</p>
+                  <p className="text-sm font-medium">Premium only</p>
                   <p className="text-xs text-muted-foreground">
-                    Restrict this PDF to VIP members only.
+                    Restrict this PDF to premium members only.
                   </p>
                 </div>
-                <Switch checked={resourceIsVipOnly} onCheckedChange={setResourceIsVipOnly} />
+                <Switch checked={resourceIsPremiumOnly} onCheckedChange={setResourceIsPremiumOnly} />
               </div>
             </div>
           </div>
@@ -436,7 +436,7 @@ function ModuleEditor({
                     title: resourceTitle,
                     description: resourceDescription,
                     tag: resourceTag,
-                    isVipOnly: resourceIsVipOnly,
+                    isPremiumOnly: resourceIsPremiumOnly,
                     file: uploadedPdf,
                   });
                   resetResourceDraft();
@@ -570,7 +570,7 @@ export function EducationBuilder() {
       title: string;
       description: string;
       tag: string;
-      isVipOnly: boolean;
+      isPremiumOnly: boolean;
       file: UploadedPdf;
     }) =>
       fetchJson("/api/resources", {
@@ -582,7 +582,7 @@ export function EducationBuilder() {
           url: payload.file.url,
           fileKey: payload.file.key,
           tag: payload.tag,
-          isVipOnly: payload.isVipOnly,
+          isPremiumOnly: payload.isPremiumOnly,
           meta: payload.file.name,
           moduleId: payload.moduleId,
         }),

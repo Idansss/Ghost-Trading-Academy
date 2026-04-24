@@ -76,7 +76,7 @@ export const signalSchema = z.object({
   reasoning: z.string().min(10),
   chartImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
   status: z.nativeEnum(SignalStatus).default(SignalStatus.ACTIVE),
-  isVipOnly: z.boolean().default(true),
+  isPremiumOnly: z.boolean().default(true),
 });
 
 export const signalOutcomeSchema = z.object({
@@ -142,7 +142,7 @@ export const resourceSchema = z.object({
   url: z.string().url(),
   fileKey: z.string().optional().nullable(),
   tag: z.string().min(2),
-  isVipOnly: z.boolean().default(true),
+  isPremiumOnly: z.boolean().default(true),
   meta: z.string().min(2),
 });
 

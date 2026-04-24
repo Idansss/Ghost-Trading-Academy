@@ -26,7 +26,7 @@ function makeSignal(overrides: Record<string, unknown> = {}) {
     reasoning: "<p>Strong support</p>",
     chartImageUrl: null,
     status: "ACTIVE",
-    isVipOnly: true,
+    isPremiumOnly: true,
     outcomeNote: null,
     tp1Hit: false,
     tp2Hit: false,
@@ -241,7 +241,7 @@ describe("SignalService.createSignal", () => {
           reasoning: "Strong support level",
           chartImageUrl: "https://malicious-site.com/chart.png",
           status: "ACTIVE" as never,
-          isVipOnly: true,
+          isPremiumOnly: true,
         },
         { adminId: "admin-1" },
       ),
@@ -273,7 +273,7 @@ describe("SignalService.createSignal", () => {
       reasoning: "Strong support level",
       chartImageUrl: "https://utfs.io/f/chart-image",
       status: "ACTIVE" as never,
-      isVipOnly: true,
+      isPremiumOnly: true,
     };
 
     const result = await service.createSignal(input, { adminId: "admin-1" });

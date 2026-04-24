@@ -34,7 +34,7 @@ function getDefaultValues(initialValues?: Partial<ResourceValues> | null): Resou
     url: initialValues?.url ?? "",
     fileKey: initialValues?.fileKey ?? "",
     tag: initialValues?.tag ?? "Foundation",
-    isVipOnly: initialValues?.isVipOnly ?? true,
+    isPremiumOnly: initialValues?.isPremiumOnly ?? true,
     meta: initialValues?.meta ?? "",
   };
 }
@@ -220,15 +220,15 @@ export function ResourceForm({
 
         <div className="flex items-center justify-between rounded-2xl border border-border px-4 py-3">
           <div>
-            <p className="text-sm font-medium">VIP only</p>
+            <p className="text-sm font-medium">Premium only</p>
             <p className="text-xs text-muted-foreground">
-              Restrict access to VIP members
+              Restrict access to premium members
             </p>
           </div>
           <Switch
-            checked={form.watch("isVipOnly")}
+            checked={form.watch("isPremiumOnly")}
             onCheckedChange={(checked) =>
-              form.setValue("isVipOnly", checked, { shouldDirty: true })
+              form.setValue("isPremiumOnly", checked, { shouldDirty: true })
             }
           />
         </div>

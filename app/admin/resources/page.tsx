@@ -69,8 +69,8 @@ export default function AdminResourcesPage() {
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const toggleVipMutation = useMutation({
-    mutationFn: ({ resource, isVipOnly }: { resource: Resource; isVipOnly: boolean }) =>
+  const togglePremiumMutation = useMutation({
+    mutationFn: ({ resource, isPremiumOnly }: { resource: Resource; isPremiumOnly: boolean }) =>
       fetchJson(`/api/resources/${resource.id}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -80,7 +80,7 @@ export default function AdminResourcesPage() {
           url: resource.url,
           fileKey: resource.fileKey,
           tag: resource.tag,
-          isVipOnly,
+          isPremiumOnly,
           meta: resource.meta,
         }),
       }),
@@ -159,15 +159,15 @@ export default function AdminResourcesPage() {
                   <TableHead>Type</TableHead>
                   <TableHead>Tag</TableHead>
                   <TableHead>Source</TableHead>
-                  <TableHead>VIP only</TableHead>
+                  <TableHead>Premium only</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {data.resources.map((resource) => {
                   const isPendingToggle =
-                    toggleVipMutation.isPending &&
-                    toggleVipMutation.variables?.resource.id === resource.id;
+                    togglePremiumMutation.isPending &&
+                    togglePremiumMutation.variables?.resource.id === resource.id;
 
                   return (
                     <TableRow key={resource.id}>
@@ -187,20 +187,20 @@ export default function AdminResourcesPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Switch
-                            checked={resource.isVipOnly}
+                            checked={resource.isPremiumOnly}
                             disabled={isPendingToggle}
                             onCheckedChange={(checked) =>
-                              toggleVipMutation.mutate({
+                              togglePremiumMutation.mutate({
                                 resource,
-                                isVipOnly: checked,
+                                isPremiumOnly: checked,
                               })
                             }
                           />
                           <span className="text-xs text-muted-foreground">
                             {isPendingToggle
                               ? "Updating..."
-                              : resource.isVipOnly
-                                ? "VIP"
+                              : resource.isPremiumOnly
+                                ? "Premium"
                                 : "Public"}
                           </span>
                         </div>

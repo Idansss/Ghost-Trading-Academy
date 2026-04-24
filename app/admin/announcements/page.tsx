@@ -104,7 +104,7 @@ export default function AdminAnnouncementsPage() {
         <PageHeader
           eyebrow="Admin"
           title="Announcements"
-          description="Compose and broadcast announcements to VIP members."
+          description="Compose and broadcast announcements to members."
         />
 
         <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">

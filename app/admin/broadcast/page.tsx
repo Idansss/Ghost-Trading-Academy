@@ -28,7 +28,7 @@ export default function AdminBroadcastPage() {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("<p></p>");
   const [targetType, setTargetType] = useState<"ALL_MEMBERS" | "BY_ROLE" | "JOINED_LAST_30_DAYS" | "NO_TRADE_14_DAYS">("ALL_MEMBERS");
-  const [role, setRole] = useState<"MEMBER" | "VIP" | "ADMIN">("MEMBER");
+  const [role, setRole] = useState<"MEMBER" | "PREMIUM" | "ADMIN">("MEMBER");
   const [channels, setChannels] = useState<Array<"EMAIL" | "IN_APP" | "PUSH">>(["IN_APP"]);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [recipientCount, setRecipientCount] = useState(0);
@@ -105,7 +105,7 @@ export default function AdminBroadcastPage() {
                     onChange={(event) => setRole(event.target.value as typeof role)}
                   >
                     <option value="MEMBER">MEMBER</option>
-                    <option value="VIP">VIP</option>
+                    <option value="PREMIUM">Premium</option>
                     <option value="ADMIN">ADMIN</option>
                   </select>
                 ) : null}

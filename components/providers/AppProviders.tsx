@@ -27,7 +27,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       attribute="class"
       defaultTheme="light"
       enableSystem={false}
-      storageKey="ghost-vip-theme"
+      storageKey="ghost-trading-academy-theme"
       disableTransitionOnChange
     >
       <SessionProvider>

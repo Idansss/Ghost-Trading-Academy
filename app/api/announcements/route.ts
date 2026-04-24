@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     });
 
     const recipients = await prisma.user.findMany({
-      where: { role: "VIP" },
+      where: { role: "PREMIUM" },
       select: { id: true },
     });
 

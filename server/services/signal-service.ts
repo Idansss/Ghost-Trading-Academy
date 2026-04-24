@@ -129,7 +129,7 @@ export class SignalService {
             ? existingSignal.chartImageUrl
             : input.chartImageUrl || null,
         status: nextStatus,
-        isVipOnly: input.isVipOnly ?? existingSignal.isVipOnly,
+        isPremiumOnly: input.isPremiumOnly ?? existingSignal.isPremiumOnly,
         outcomeNote:
           input.outcomeNote === undefined
             ? existingSignal.outcomeNote

@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { cn } from "@/lib/utils";
 
 const LOGO_SRC = "/brand/logo.png";
@@ -25,10 +26,8 @@ export function Logo({ compact = false }: { compact?: boolean }) {
       </span>
       {!compact ? (
         <span className="flex flex-col">
-          <span className="text-sm font-semibold">Ghost VIP</span>
-          <span className="text-xs text-muted-foreground">
-            Ghost Trading Desk
-          </span>
+          <span className="text-sm font-semibold">{DEFAULT_PLATFORM_NAME}</span>
+          <span className="text-xs text-muted-foreground">Trading desk</span>
         </span>
       ) : null}
     </Link>

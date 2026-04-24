@@ -4,6 +4,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { AppProviders } from "@/components/providers/AppProviders";
+import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { getSiteConfig } from "@/lib/site-config";
 
 const inter = Inter({
@@ -20,7 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export async function generateMetadata(): Promise<Metadata> {
   const siteConfig = await getSiteConfig();
-  const platformName = siteConfig.platformName || "Ghost VIP";
+  const platformName = siteConfig.platformName || DEFAULT_PLATFORM_NAME;
   return {
     title: { default: platformName, template: `%s | ${platformName}` },
     description:

@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { env } from "@/lib/env";
 
 let resendClient: Resend | null | undefined;
@@ -36,10 +37,10 @@ export async function sendWelcomeEmail(to: string, name: string) {
   await resend.emails.send({
     from: env.resendFromEmail,
     to,
-    subject: "Welcome to Ghost VIP",
+    subject: `Welcome to ${DEFAULT_PLATFORM_NAME}`,
     html: `
       <div style="font-family: Inter, Arial, sans-serif; color: #111114; padding: 24px;">
-        <h1 style="font-weight: 600; margin-bottom: 16px;">Welcome to Ghost VIP</h1>
+        <h1 style="font-weight: 600; margin-bottom: 16px;">Welcome to ${DEFAULT_PLATFORM_NAME}</h1>
         <p style="margin: 0 0 12px;">Hi ${name},</p>
         <p style="margin: 0 0 12px;">
           Your member account is now live. You can sign in, start logging trades, and explore the platform immediately.

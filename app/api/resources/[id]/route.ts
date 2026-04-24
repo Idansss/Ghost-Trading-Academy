@@ -29,7 +29,7 @@ export async function PATCH(
       url: body.url ?? existingResource.url,
       fileKey: body.fileKey ?? existingResource.fileKey,
       tag: body.tag ?? existingResource.tag,
-      isVipOnly: body.isVipOnly ?? existingResource.isVipOnly,
+      isPremiumOnly: body.isPremiumOnly ?? existingResource.isPremiumOnly,
       meta: body.meta ?? existingResource.meta,
     });
 

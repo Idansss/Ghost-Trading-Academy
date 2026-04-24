@@ -1,6 +1,6 @@
-# Ghost VIP - Premium Trading Platform
+# Ghost Trading Academy
 
-A full-stack trading community platform for crypto traders. VIP signals,
+A full-stack trading community platform for crypto traders: signals,
 trade journal, daily outlook, education hub, analytics, and community.
 
 ## Quick Start
@@ -16,8 +16,8 @@ trade journal, daily outlook, education hub, analytics, and community.
 
 ## Default Login Credentials (after seed)
 
-Admin: `admin@ghostvip.com / admin123`
-VIP member: `vip@ghostvip.com / vip123`
+Admin: `admin@ghosttrading.academy / admin123`
+Premium member: `premium@ghosttrading.academy / member123`
 
 Change these passwords immediately after first login.
 
@@ -28,7 +28,7 @@ Change these passwords immediately after first login.
 - Tailwind CSS + shadcn/ui
 - Prisma + PostgreSQL
 - NextAuth.js v5
-- Uploadthing (PDF uploads)
+- Supabase Storage (file uploads)
 - Resend (transactional email)
 - Recharts (charts)
 - TipTap (rich text notes editor)
@@ -89,7 +89,7 @@ Response format for the refactored endpoints:
 | SUPABASE_STORAGE_BUCKET | No | Storage bucket name (defaults to `desk-media`) |
 | RESEND_API_KEY | No | Resend API key for emails |
 | RESEND_FROM_EMAIL | No | From address for emails |
-| NEXT_PUBLIC_CONTACT_LINK | No | WhatsApp or Telegram link for VIP upgrade |
+| NEXT_PUBLIC_CONTACT_LINK | No | WhatsApp or Telegram link for member support |
 
 ## Health Checks
 

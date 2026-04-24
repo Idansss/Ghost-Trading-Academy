@@ -46,7 +46,7 @@ export async function GET() {
           take: 10,
         }),
         prisma.user.findMany({
-          where: { role: { in: ["MEMBER", "VIP"] } },
+          where: { role: { in: ["MEMBER", "PREMIUM"] } },
           select: {
             id: true,
             name: true,

@@ -54,7 +54,7 @@ export function SignalsDesk() {
           reasoning: signal.reasoning,
           chartImageUrl: signal.chartImageUrl,
           status: "ACTIVE",
-          isVipOnly: signal.isVipOnly,
+          isPremiumOnly: signal.isPremiumOnly,
         }),
       }),
     onSuccess: async () => {
@@ -121,7 +121,7 @@ export function SignalsDesk() {
                       <TableHead>Status</TableHead>
                       <TableHead>Timeframe</TableHead>
                       <TableHead>Direction</TableHead>
-                      <TableHead>VIP</TableHead>
+                      <TableHead>Access</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -151,9 +151,9 @@ export function SignalsDesk() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            <Badge variant={signal.isVipOnly ? "default" : "muted"}>
+                            <Badge variant={signal.isPremiumOnly ? "default" : "muted"}>
                               <span className="status-dot bg-current" />
-                              {signal.isVipOnly ? "VIP" : "Public"}
+                              {signal.isPremiumOnly ? "Premium" : "Public"}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right">
@@ -228,7 +228,7 @@ export function SignalsDesk() {
           <SheetHeader>
             <SheetTitle>Edit signal</SheetTitle>
             <SheetDescription>
-              Update the signal details, status, and VIP visibility.
+              Update the signal details, status, and access level.
             </SheetDescription>
           </SheetHeader>
           {editingSignal ? (

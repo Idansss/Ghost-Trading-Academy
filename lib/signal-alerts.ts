@@ -29,11 +29,11 @@ type SignalOutcomeEvent = {
 };
 
 function getSignalAudienceWhere(signal: Signal): Prisma.UserWhereInput {
-  return signal.isVipOnly
-    ? { role: "VIP" }
+  return signal.isPremiumOnly
+    ? { role: "PREMIUM" }
     : {
         role: {
-          in: ["VIP", "MEMBER"],
+          in: ["PREMIUM", "MEMBER"],
         },
       };
 }

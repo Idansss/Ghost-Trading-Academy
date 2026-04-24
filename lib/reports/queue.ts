@@ -18,7 +18,7 @@ export function enqueueSendMonthlyReports(month: string) {
     jobs.set(jobId, { status: "RUNNING", startedAt: new Date() });
     try {
       const recipients = await prisma.user.findMany({
-        where: { role: { in: ["MEMBER", "VIP"] } },
+        where: { role: { in: ["MEMBER", "PREMIUM"] } },
         select: { id: true, name: true, email: true },
       });
       for (const recipient of recipients) {

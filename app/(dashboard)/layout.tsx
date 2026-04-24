@@ -127,7 +127,7 @@ export default async function DashboardLayout({
           <PushPermissionPrompt appId={env.onesignalAppId} userId={session.user.id} />
         ) : null}
         <LivePriceTicker symbols={siteConfig.tickerSymbols} />
-        <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 pt-5 pb-[calc(1rem+4rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-6 md:pb-8 lg:px-8">
+        <main className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain bg-[color:var(--bg-surface)] px-4 pt-5 pb-[calc(1rem+4rem+env(safe-area-inset-bottom))] sm:px-6 md:pt-6 md:pb-8 lg:px-8">
           {children}
         </main>
         <AddToHomeScreenPrompt />

@@ -31,7 +31,7 @@ function getDefaultValues(initialValues?: Partial<SignalValues> | null): SignalV
     reasoning: initialValues?.reasoning ?? "",
     chartImageUrl: initialValues?.chartImageUrl ?? "",
     status: initialValues?.status ?? "ACTIVE",
-    isVipOnly: initialValues?.isVipOnly ?? true,
+    isPremiumOnly: initialValues?.isPremiumOnly ?? true,
   };
 }
 
@@ -185,14 +185,14 @@ export function PostSignalForm({
       <div className="rounded-2xl border border-border px-4 py-3 md:col-span-2">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-medium">VIP only</p>
+            <p className="text-sm font-medium">Premium only</p>
             <p className="text-xs text-muted-foreground">
-              Restrict the signal to VIP members
+              Restrict the signal to premium members
             </p>
           </div>
           <Switch
-            checked={form.watch("isVipOnly")}
-            onCheckedChange={(checked) => form.setValue("isVipOnly", checked)}
+            checked={form.watch("isPremiumOnly")}
+            onCheckedChange={(checked) => form.setValue("isPremiumOnly", checked)}
           />
         </div>
       </div>

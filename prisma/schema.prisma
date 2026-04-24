@@ -13,7 +13,7 @@ datasource db {
 
 enum Role {
   ADMIN
-  VIP
+  PREMIUM
   MEMBER
 }
 
@@ -387,7 +387,7 @@ model Signal {
   postedAt  DateTime      @default(now())
   closedAt  DateTime?
   finalPnlR Float?
-  isVipOnly Boolean       @default(true)
+  isPremiumOnly Boolean       @default(true)
   postedBy  String
   author    User          @relation(fields: [postedBy], references: [id], onDelete: Cascade)
   takenBy   SignalTaken[]
@@ -470,7 +470,7 @@ model Resource {
   url         String
   fileKey     String?
   tag         String
-  isVipOnly   Boolean              @default(true)
+  isPremiumOnly   Boolean              @default(true)
   meta        String
   uploadedAt  DateTime             @default(now())
   uploadedBy  String

@@ -103,7 +103,7 @@ export const env = {
   supabaseServiceRoleKey: parsedEnv.SUPABASE_SERVICE_ROLE_KEY,
   supabaseStorageBucket: parsedEnv.SUPABASE_STORAGE_BUCKET ?? "desk-media",
   resendApiKey: parsedEnv.RESEND_API_KEY,
-  resendFromEmail: parsedEnv.RESEND_FROM_EMAIL ?? "noreply@ghostvip.com",
+  resendFromEmail: parsedEnv.RESEND_FROM_EMAIL ?? "noreply@ghosttrading.academy",
   contactLink: parsedEnv.NEXT_PUBLIC_CONTACT_LINK ?? "#",
   onesignalAppId: parsedEnv.ONESIGNAL_APP_ID,
   onesignalRestApiKey: parsedEnv.ONESIGNAL_REST_API_KEY,

@@ -12,6 +12,7 @@ import {
   Zap,
 } from "lucide-react";
 import { auth } from "@/lib/auth";
+import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { getSiteConfig } from "@/lib/site-config";
 import { getSignalTrackRecord } from "@/server/repositories/signal-repository";
 import { redirect } from "next/navigation";
@@ -104,7 +105,7 @@ export default async function HomePage() {
           ctaLabel: "Apply for Access",
           ctaUrl: "/auth/login",
           isWaitlistMode: false,
-          platformName: "Ghost VIP",
+          platformName: DEFAULT_PLATFORM_NAME,
         };
 
   const stats =
@@ -114,7 +115,7 @@ export default async function HomePage() {
   const subheadline = config.heroSubheadline ?? DEFAULT_SUBHEADLINE;
   const ctaLabel = config.ctaLabel;
   const ctaUrl = config.ctaUrl;
-  const platformName = config.platformName ?? "Ghost VIP";
+  const platformName = config.platformName ?? DEFAULT_PLATFORM_NAME;
 
   return (
     <div className="min-h-screen bg-background text-foreground">

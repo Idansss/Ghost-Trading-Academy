@@ -29,7 +29,7 @@ export function UploadResourceForm({
       url: "",
       fileKey: "",
       tag: "Foundation",
-      isVipOnly: true,
+      isPremiumOnly: true,
       meta: "",
     },
   });

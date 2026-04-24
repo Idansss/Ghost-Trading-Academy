@@ -21,6 +21,8 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { MOBILE_HEADER_WORDMARK } from "@/lib/branding";
+import { roleDisplayName } from "@/lib/role-display";
 import { cn } from "@/lib/utils";
 
 export function MobileHeader({
@@ -103,7 +105,7 @@ export function MobileHeader({
               <div className="mt-3">
                 <Badge variant={user.role === "MEMBER" ? "muted" : "default"}>
                   <span className="status-dot bg-current" />
-                  {user.role}
+                  {roleDisplayName(user.role)}
                 </Badge>
               </div>
               <div className="mt-4 flex flex-col gap-2">
@@ -132,7 +134,7 @@ export function MobileHeader({
       </Sheet>
 
       <p className="text-sm font-semibold tracking-[0.22em] text-[color:var(--color-gold)]">
-        GHOST VIP
+        {MOBILE_HEADER_WORDMARK}
       </p>
 
       <div className="flex items-center gap-1">

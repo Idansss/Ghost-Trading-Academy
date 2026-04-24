@@ -22,7 +22,7 @@ type Targeting =
 async function getRecipients(targeting: Targeting) {
   if (targeting.type === "ALL_MEMBERS") {
     return prisma.user.findMany({
-      where: { role: { in: ["MEMBER", "VIP"] } },
+      where: { role: { in: ["MEMBER", "PREMIUM"] } },
     });
   }
   if (targeting.type === "BY_ROLE") {
@@ -35,7 +35,7 @@ async function getRecipients(targeting: Targeting) {
   }
   return prisma.user.findMany({
     where: {
-      role: { in: ["MEMBER", "VIP"] },
+      role: { in: ["MEMBER", "PREMIUM"] },
       trades: {
         none: {
           tradeDate: { gte: subDays(new Date(), 14) },

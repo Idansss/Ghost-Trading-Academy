@@ -39,7 +39,7 @@ type SignalThisWeek = {
 
 type AdminOverviewData = {
   totalMembers: number;
-  totalVipUsers: number;
+  totalPremiumUsers: number;
   totalSignalsThisMonth: number;
   totalTradesLogged: number;
   activityFeed: ActivityItem[];
@@ -91,7 +91,7 @@ export default function AdminOverviewPage() {
 
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <MetricCard label="Total Members" value={`${data.totalMembers}`} />
-          <MetricCard label="VIP Users" value={`${data.totalVipUsers}`} />
+          <MetricCard label="Premium members" value={`${data.totalPremiumUsers}`} />
           <MetricCard label="Signals This Month" value={`${data.totalSignalsThisMonth}`} />
           <MetricCard label="Trades Logged" value={`${data.totalTradesLogged}`} />
         </div>

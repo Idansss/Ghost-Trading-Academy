@@ -5,6 +5,7 @@ import type { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
 import type { GlobalSearchItem } from "@/components/layout/GlobalSearch";
+import { roleDisplayName } from "@/lib/role-display";
 import { GlobalSearch } from "@/components/layout/GlobalSearch";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { NotificationBell } from "@/components/layout/NotificationBell";
@@ -62,7 +63,7 @@ export function Topbar({
                       className="mt-1"
                     >
                       <span className="status-dot bg-current" />
-                      {user.role}
+                      {roleDisplayName(user.role)}
                     </Badge>
                   </div>
                 </div>

@@ -96,10 +96,10 @@ async function main() {
   const memberPassword = await bcrypt.hash("member123", 12);
 
   const admin = await prisma.user.upsert({
-    where: { email: "admin@ghostvip.com" },
+    where: { email: "admin@ghosttrading.academy" },
     update: { role: Role.ADMIN },
     create: {
-      email: "admin@ghostvip.com",
+      email: "admin@ghosttrading.academy",
       name: "Ghost Admin",
       password: adminPassword,
       role: Role.ADMIN,
@@ -108,29 +108,29 @@ async function main() {
     },
   });
 
-  const vipUser = await prisma.user.upsert({
-    where: { email: "vip@ghostvip.com" },
-    update: { role: Role.VIP },
+  const premiumUser = await prisma.user.upsert({
+    where: { email: "premium@ghosttrading.academy" },
+    update: { role: Role.PREMIUM },
     create: {
-      email: "vip@ghostvip.com",
-      name: "VIP Member",
+      email: "premium@ghosttrading.academy",
+      name: "Premium Member",
       password: memberPassword,
-      role: Role.VIP,
+      role: Role.PREMIUM,
       accountBalance: 10000,
-      referralCode: "VIPMEM01",
+      referralCode: "PREM001",
     },
   });
 
   const demoMembers = await Promise.all(
     Array.from({ length: 5 }).map((_, index) =>
       prisma.user.upsert({
-        where: { email: `member${index + 1}@ghostvip.com` },
+        where: { email: `member${index + 1}@ghosttrading.academy` },
         update: {},
         create: {
-          email: `member${index + 1}@ghostvip.com`,
+          email: `member${index + 1}@ghosttrading.academy`,
           name: `Demo Member ${index + 1}`,
           password: memberPassword,
-          role: index === 0 ? Role.VIP : Role.MEMBER,
+          role: index === 0 ? Role.PREMIUM : Role.MEMBER,
           accountBalance: 10000 + index * 2500,
           referralCode: `MEMBER${String(index + 1).padStart(2, "0")}`,
         },
@@ -172,7 +172,7 @@ async function main() {
 
   // AUDIT FIX: Seeding now backfills every user into all non-DM channels so
   // reruns and fresh environments match the registration-time behavior.
-  await Promise.all([admin, vipUser, ...demoMembers].map((user) => addUserToDefaultChatChannels(user.id)));
+  await Promise.all([admin, premiumUser, ...demoMembers].map((user) => addUserToDefaultChatChannels(user.id)));
 
   await prisma.tradeTag.createMany({
     data: defaultTradeTags,
@@ -207,7 +207,7 @@ async function main() {
     reasoning: `Demo signal reasoning ${index + 1}.`,
     status: (index % 3 === 0 ? "ACTIVE" : index % 3 === 1 ? "TP1_HIT" : "CLOSED") as SignalStatus,
     postedBy: admin.id,
-    isVipOnly: true,
+    isPremiumOnly: true,
   }));
 
   for (const signal of signalSeeds) {
@@ -253,7 +253,7 @@ async function main() {
           type: ResourceType.GUIDE,
           url: "https://example.com/resource",
           tag: "Demo",
-          isVipOnly: true,
+          isPremiumOnly: true,
           meta: "10 min read",
           uploadedBy: admin.id,
           moduleId: module.id,
@@ -301,7 +301,7 @@ async function main() {
   }
 
   console.log("Seeded admin:", admin.email);
-  console.log("Seeded VIP user:", vipUser.email);
+  console.log("Seeded premium member:", premiumUser.email);
   console.log("Seeded demo members:", demoMembers.length);
   console.log("Seeded trade tags:", defaultTradeTags.length);
   console.log("Seeded demo signals:", signalSeeds.length);

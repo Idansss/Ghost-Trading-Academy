@@ -17,7 +17,7 @@ export async function GET() {
 
     const [
       totalMembers,
-      totalVipUsers,
+      totalPremiumUsers,
       totalSignalsThisMonth,
       totalTradesLogged,
       recentMembers,
@@ -27,7 +27,7 @@ export async function GET() {
       memberSignupDays,
     ] = await Promise.all([
       prisma.user.count(),
-      prisma.user.count({ where: { role: "VIP" } }),
+      prisma.user.count({ where: { role: "PREMIUM" } }),
       prisma.signal.count({ where: { postedAt: { gte: monthStart } } }),
       prisma.trade.count({ where: { month } }),
       prisma.user.findMany({
@@ -98,7 +98,7 @@ export async function GET() {
 
     return Response.json({
       totalMembers,
-      totalVipUsers,
+      totalPremiumUsers,
       totalSignalsThisMonth,
       totalTradesLogged,
       activityFeed,
