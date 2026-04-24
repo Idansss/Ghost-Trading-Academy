@@ -4,7 +4,7 @@ import { CheckCircle2, CloudUpload, RefreshCcw, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { useUploadThing } from "@/lib/uploadthing";
+import { getUploadThingFilePayload, useUploadThing } from "@/lib/uploadthing";
 
 type UploadedFile = {
   url: string;
@@ -49,16 +49,11 @@ export function PdfUploadButton({
     try {
       const response = await startUpload([file]);
       const uploaded = response?.[0];
+      const nextFile = getUploadThingFilePayload(uploaded);
 
-      if (!uploaded) {
+      if (!nextFile) {
         throw new Error("Upload did not complete.");
       }
-
-      const nextFile = {
-        url: uploaded.serverData.url,
-        key: uploaded.serverData.key,
-        name: uploaded.serverData.name,
-      };
 
       setUploadedFile(nextFile);
       onUpload(nextFile.url, nextFile.key, nextFile.name);

@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import type { z } from "zod";
 import { memberWinSchema } from "@/lib/validators";
 import { fetchJson } from "@/lib/client-api";
-import { useUploadThing } from "@/lib/uploadthing";
+import { getUploadThingFileUrl, useUploadThing } from "@/lib/uploadthing";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,7 +70,7 @@ export function ShareWinModal({
     setIsUploading(true);
     try {
       const uploaded = await startUpload([file]);
-      const url = uploaded?.[0]?.url;
+      const url = getUploadThingFileUrl(uploaded?.[0]);
       if (url) {
         form.setValue("imageUrl", url);
         toast.success("Image uploaded.");

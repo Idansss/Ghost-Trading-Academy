@@ -5,7 +5,7 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useUploadThing } from "@/lib/uploadthing";
+import { getUploadThingFileUrl, useUploadThing } from "@/lib/uploadthing";
 
 export function AvatarUploadButton({
   name,
@@ -34,12 +34,13 @@ export function AvatarUploadButton({
     try {
       const response = await startUpload([file]);
       const uploaded = response?.[0];
+      const url = getUploadThingFileUrl(uploaded);
 
-      if (!uploaded?.serverData.url) {
+      if (!url) {
         throw new Error("Upload did not complete.");
       }
 
-      onUpload(uploaded.serverData.url);
+      onUpload(url);
       toast.success("Avatar uploaded. Save changes to apply it to your profile.");
     } catch (error) {
       toast.error(

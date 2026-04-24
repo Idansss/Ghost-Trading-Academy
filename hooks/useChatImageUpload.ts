@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useUploadThing } from "@/lib/uploadthing";
+import { getUploadThingFileUrl, useUploadThing } from "@/lib/uploadthing";
 
 type UploadImageResult = {
   url: string;
@@ -33,8 +33,13 @@ export function useChatImageUpload(): {
       return null;
     }
 
+    const url = getUploadThingFileUrl(uploadedFile);
+    if (!url) {
+      return null;
+    }
+
     return {
-      url: uploadedFile.serverData?.url ?? uploadedFile.url,
+      url,
       userId: uploadedFile.serverData?.userId ?? null,
     };
   };

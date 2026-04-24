@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useUploadThing } from "@/lib/uploadthing";
+import { getUploadThingFileUrl, useUploadThing } from "@/lib/uploadthing";
 
 export function TradeChartUploadField({
   imageUrl,
@@ -31,12 +31,13 @@ export function TradeChartUploadField({
     try {
       const response = await startUpload([file]);
       const uploaded = response?.[0];
+      const url = getUploadThingFileUrl(uploaded);
 
-      if (!uploaded?.serverData.url) {
+      if (!url) {
         throw new Error("Upload did not complete.");
       }
 
-      onUpload(uploaded.serverData.url);
+      onUpload(url);
       toast.success("Chart image uploaded. Save the trade to attach it.");
     } catch (error) {
       toast.error(
