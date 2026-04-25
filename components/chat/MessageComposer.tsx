@@ -3,6 +3,7 @@
 import { Paperclip, Send, X } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatImageUpload } from "@/hooks/useChatImageUpload";
@@ -249,9 +250,14 @@ export function MessageComposer({
                       }
                     : currentImage,
                 );
+              } else {
+                clearImage();
+                toast.error("Image upload failed. Please try again.");
               }
-            } catch {
+            } catch (err) {
               clearImage();
+              const message = err instanceof Error ? err.message : "Image upload failed.";
+              toast.error(message);
             } finally {
               event.target.value = "";
             }

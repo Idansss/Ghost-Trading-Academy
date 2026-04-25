@@ -29,8 +29,6 @@ export function useChatImageUpload(): {
         onProgress: setProgress,
       });
       return { url, userId: null };
-    } catch {
-      return null;
     } finally {
       setIsUploading(false);
     }
