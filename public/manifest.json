@@ -1,7 +1,7 @@
 {
   "name": "The Thesis Desk",
   "short_name": "Thesis Desk",
-  "description": "Private crypto trading desk web app",
+  "description": "Crypto trading desk web app for signals, journal, and analytics",
   "start_url": "/dashboard",
   "display": "standalone",
   "theme_color": "#D4A017",

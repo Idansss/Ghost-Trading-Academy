@@ -21,6 +21,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://ghosttradingacademy.com/sitemap.xml",
+    sitemap: "https://thethesisdesk.xyz/sitemap.xml",
   };
 }

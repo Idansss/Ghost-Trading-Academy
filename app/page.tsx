@@ -22,7 +22,7 @@ export const revalidate = 3600;
 
 const DEFAULT_HEADLINE = "Trade with The Thesis Desk. Stay Ahead of the Market.";
 const DEFAULT_SUBHEADLINE =
-  "Institutional-grade crypto signals, a professional trading journal, live market analytics, and a community of serious traders — all in one private desk.";
+  "Institutional-grade crypto signals, a professional trading journal, live market analytics, and a community of serious traders — all in one dedicated trading desk.";
 
 const FEATURES = [
   {
@@ -57,7 +57,7 @@ const FEATURES = [
   },
   {
     icon: Users,
-    title: "Private Community",
+    title: "Trading community",
     description:
       "A focused community of vetted traders sharing wins, lessons, and accountability — no noise.",
   },
@@ -74,7 +74,7 @@ const TESTIMONIALS = [
     name: "Sophia R.",
     role: "Full-time Trader",
     quote:
-      "The daily outlook alone is worth the membership. Knowing the desk's bias before the session opens keeps me out of low-probability trades.",
+      "The daily outlook alone is worth it. Knowing the desk's bias before the session opens keeps me out of low-probability trades.",
   },
   {
     name: "Daniel K.",
@@ -162,7 +162,7 @@ export default async function HomePage() {
           <div className="relative mx-auto max-w-4xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/8 px-4 py-1.5 text-xs font-medium text-primary">
               <Shield className="h-3.5 w-3.5" />
-              Private Trading Desk — Application Required
+              The Thesis Desk — application required
             </div>
 
             <h1 className="text-balance text-4xl font-bold leading-tight tracking-tight sm:text-5xl lg:text-6xl">
@@ -344,7 +344,7 @@ export default async function HomePage() {
           <div className="mx-auto max-w-4xl">
             <div className="surface-card rounded-3xl p-8 sm:p-12">
               <h2 className="mb-8 text-center text-2xl font-bold sm:text-3xl">
-                Membership includes
+                What you get
               </h2>
               <ul className="grid gap-3 sm:grid-cols-2">
                 {[
@@ -379,7 +379,7 @@ export default async function HomePage() {
               Ready to trade at a higher level?
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Membership is by application only. We keep the desk small and the
+              Access is by application only. We keep the desk small and the
               signal-to-noise ratio high.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -405,7 +405,7 @@ export default async function HomePage() {
             <span className="text-sm font-semibold">{platformName}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} The Thesis Desk. Private membership — not financial advice.
+            &copy; {new Date().getFullYear()} The Thesis Desk. Not financial advice.
           </p>
           <Link
             href="/auth/login"
