@@ -545,7 +545,13 @@ export function EducationBuilder() {
     mutationFn: () =>
       fetchJson("/api/admin/education/courses", {
         method: "POST",
-        body: JSON.stringify({ title: courseTitle, description: courseDescription }),
+        body: JSON.stringify({
+          title: courseTitle,
+          description: courseDescription,
+          coverImage: newCoverImageUrl ?? null,
+          handoutPdfUrl: newHandoutPdf?.url ?? null,
+          isPublished: true,
+        }),
       }),
     onSuccess: async () => {
       setCourseTitle("");
