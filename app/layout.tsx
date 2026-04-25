@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { getSiteConfig } from "@/lib/site-config";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin"],
