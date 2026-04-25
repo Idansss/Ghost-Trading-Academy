@@ -38,40 +38,57 @@ export default function LoginPage() {
     },
   });
 
+  // CLAUDE FIX: setIsSubmitting was only reset in the error branch of signIn,
+  // meaning any thrown exception (network error, 429 on the 2FA challenge, etc.)
+  // left the submit button permanently disabled. Wrapped in try/finally so
+  // isSubmitting always resets, and each failure path shows a specific toast.
   const onSubmit = handleSubmit(async (values) => {
     setIsSubmitting(true);
-    const challenge = await fetch("/api/auth/2fa/challenge", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
+    try {
+      let challengeJson: { requiresTwoFactor?: boolean; token?: string } = {};
+      try {
+        const challenge = await fetch("/api/auth/2fa/challenge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: values.email,
+            password: values.password,
+          }),
+        });
+        if (challenge.status === 429) {
+          toast.error("Too many attempts. Please wait a moment and try again.");
+          return;
+        }
+        if (challenge.ok) {
+          challengeJson = (await challenge.json()) as typeof challengeJson;
+        }
+      } catch {
+        // 2FA challenge unreachable — fall through to credentials sign-in
+      }
+
+      if (challengeJson.requiresTwoFactor && challengeJson.token) {
+        router.push(`/auth/2fa?token=${encodeURIComponent(challengeJson.token)}`);
+        return;
+      }
+
+      const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
-      }),
-    });
-    const challengeJson = (await challenge.json()) as {
-      requiresTwoFactor?: boolean;
-      token?: string;
-    };
+        redirect: false,
+      });
 
-    if (challengeJson.requiresTwoFactor && challengeJson.token) {
-      router.push(`/auth/2fa?token=${encodeURIComponent(challengeJson.token)}`);
-      return;
-    }
+      if (result?.error) {
+        toast.error("Invalid email or password.");
+        return;
+      }
 
-    const result = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    });
-
-    if (result?.error) {
-      toast.error("Invalid email or password.");
+      toast.success("Welcome back.");
+      router.push("/dashboard");
+    } catch {
+      toast.error("Unable to sign in. Please try again.");
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    toast.success("Welcome back.");
-    router.push("/dashboard");
   });
 
   return (

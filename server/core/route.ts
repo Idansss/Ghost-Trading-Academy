@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { AppError } from "@/server/core/app-error";
 import { fromError } from "@/server/core/http";
 import logger from "@/server/core/logger";
@@ -54,8 +55,15 @@ export function createRouteHandler<TParams = Record<string, never>>(
         headers,
       });
     } catch (error) {
-      const logLevel =
-        error instanceof AppError && error.statusCode < 500 ? "warn" : "error";
+      const isServerError = !(error instanceof AppError) || error.statusCode >= 500;
+
+      if (isServerError) {
+        Sentry.captureException(error, {
+          extra: { correlationId, route: path, method: request.method },
+        });
+      }
+
+      const logLevel = isServerError ? "error" : "warn";
 
       logger[logLevel]({
         type: "request_error",
@@ -65,7 +73,7 @@ export function createRouteHandler<TParams = Record<string, never>>(
         durationMs: Date.now() - startedAt,
         ipAddress,
         errorMessage: error instanceof Error ? error.message : "Unknown error",
-        err: error instanceof Error ? error : undefined,
+        ...(isServerError && { err: error instanceof Error ? error : undefined }),
       });
 
       const response = fromError(error);

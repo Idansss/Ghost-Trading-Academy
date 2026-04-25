@@ -7,6 +7,7 @@ export const signedUploadPurposeSchema = z.enum([
   "memberWin",
   "adminImage",
   "pdf",
+  "tradeNote",
 ]);
 
 export type SignedUploadPurpose = z.infer<typeof signedUploadPurposeSchema>;
@@ -38,6 +39,10 @@ export const uploadLimits: Record<
     maxBytes: 8 * MB,
     allowedMimePrefixes: ["image/"],
   },
+  tradeNote: {
+    maxBytes: 4 * MB,
+    allowedMimePrefixes: ["image/"],
+  },
   pdf: {
     maxBytes: 16 * MB,
     allowedMimeExact: ["application/pdf"],
@@ -53,6 +58,7 @@ export function folderForPurpose(purpose: SignedUploadPurpose, userId: string): 
     memberWin: "wins",
     adminImage: "admin",
     pdf: "resources",
+    tradeNote: "trade-notes",
   }[purpose];
   return `${base}/${userId}`;
 }

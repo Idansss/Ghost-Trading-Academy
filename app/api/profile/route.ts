@@ -1,128 +1,102 @@
 import bcrypt from "bcryptjs";
 import { calculateMonthlyPnL, getMonthlySnapshot } from "@/lib/calculations";
-import { requireUser } from "@/lib/auth";
 import { markOnboardingStepComplete } from "@/lib/onboarding";
 import { prisma } from "@/lib/prisma";
 import { assertTrustedImageUrl } from "@/lib/sanitize";
-import { apiError, safeJson } from "@/lib/utils";
 import { profileSchema } from "@/lib/validators";
+import { requireAuthenticatedUser } from "@/server/core/auth";
+import { AppError } from "@/server/core/app-error";
+import { success } from "@/server/core/http";
+import { createRouteHandler } from "@/server/core/route";
+import { parseJsonBody } from "@/server/core/validation";
 
-// AUDIT FIX: All authenticated API routes must opt out of static rendering
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  try {
-    const user = await requireUser();
-    const trades = await prisma.trade.findMany({
-      where: { userId: user.id },
-      orderBy: { tradeDate: "asc" },
-    });
+export const GET = createRouteHandler(async () => {
+  const user = await requireAuthenticatedUser();
 
-    const snapshot = getMonthlySnapshot(trades);
-    const bestMonth =
-      Object.entries(snapshot).sort((left, right) => right[1] - left[1])[0] ?? null;
+  const trades = await prisma.trade.findMany({
+    where: { userId: user.id },
+    orderBy: { tradeDate: "asc" },
+  });
 
-    return Response.json({
-      profile: await prisma.user.findUnique({
-        where: { id: user.id },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          avatarUrl: true,
-          role: true,
-          accountSize: true,
-          riskPerTrade: true,
-          leaderboardOptIn: true,
-          emailSignalAlerts: true,
-          twoFactorEnabled: true,
-          referralCode: true,
-          createdAt: true,
-        },
-      }),
-      stats: {
-        totalTrades: trades.length,
-        totalPnl: calculateMonthlyPnL(trades),
-        bestMonth,
-      },
-    });
-  } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return apiError("Unauthorized.", 401);
-    }
-    return apiError("Unable to load profile.", 500);
+  const snapshot = getMonthlySnapshot(trades);
+  const bestMonth =
+    Object.entries(snapshot).sort((left, right) => right[1] - left[1])[0] ?? null;
+
+  const profile = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      avatarUrl: true,
+      role: true,
+      accountSize: true,
+      riskPerTrade: true,
+      leaderboardOptIn: true,
+      emailSignalAlerts: true,
+      twoFactorEnabled: true,
+      referralCode: true,
+      createdAt: true,
+    },
+  });
+
+  return success({
+    profile,
+    stats: {
+      totalTrades: trades.length,
+      totalPnl: calculateMonthlyPnL(trades),
+      bestMonth,
+    },
+  });
+});
+
+export const PATCH = createRouteHandler(async ({ request }) => {
+  const user = await requireAuthenticatedUser();
+  const data = await parseJsonBody(request, profileSchema);
+
+  const existingUser = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!existingUser) {
+    throw AppError.notFound("User not found.");
   }
-}
 
-export async function PATCH(request: Request) {
-  try {
-    const user = await requireUser();
-    const body = await safeJson<unknown>(request);
-    const parsed = profileSchema.safeParse(body);
-    // AUDIT FIX: Validation error shape changed from { message, errors } to
-    // { error, details } for consistency with the global error format.
-    if (!parsed.success) {
-      return Response.json(
-        { error: "Validation failed.", details: parsed.error.flatten() },
-        { status: 422 },
-      );
+  assertTrustedImageUrl(data.avatarUrl || null);
+
+  if (data.currentPassword && data.newPassword) {
+    const valid = await bcrypt.compare(data.currentPassword, existingUser.password);
+    if (!valid) {
+      throw AppError.badRequest("Current password is incorrect.");
     }
-
-    const existingUser = await prisma.user.findUnique({
-      where: { id: user.id },
-    });
-
-    if (!existingUser) {
-      return apiError("User not found.", 404);
-    }
-    assertTrustedImageUrl(parsed.data.avatarUrl || null);
-
-    if (parsed.data.currentPassword && parsed.data.newPassword) {
-      const valid = await bcrypt.compare(
-        parsed.data.currentPassword,
-        existingUser.password,
-      );
-
-      if (!valid) {
-        return apiError("Current password is incorrect.", 400);
-      }
-    }
-
-    const updated = await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        name: parsed.data.name,
-        avatarUrl: parsed.data.avatarUrl || null,
-        accountSize: parsed.data.accountSize ?? null,
-        riskPerTrade: parsed.data.riskPerTrade,
-        leaderboardOptIn: parsed.data.leaderboardOptIn,
-        emailSignalAlerts: parsed.data.emailSignalAlerts,
-        ...(parsed.data.newPassword
-          ? { password: await bcrypt.hash(parsed.data.newPassword, 12) }
-          : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        role: true,
-        accountSize: true,
-        riskPerTrade: true,
-        leaderboardOptIn: true,
-        emailSignalAlerts: true,
-        twoFactorEnabled: true,
-        referralCode: true,
-      },
-    });
-
-    await markOnboardingStepComplete(user.id, "PROFILE_SETUP");
-
-    return Response.json(updated);
-  } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return apiError("Unauthorized.", 401);
-    }
-    return apiError("Unable to update profile.", 500);
   }
-}
+
+  const updated = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      name: data.name,
+      avatarUrl: data.avatarUrl || null,
+      accountSize: data.accountSize ?? null,
+      riskPerTrade: data.riskPerTrade,
+      leaderboardOptIn: data.leaderboardOptIn,
+      emailSignalAlerts: data.emailSignalAlerts,
+      ...(data.newPassword ? { password: await bcrypt.hash(data.newPassword, 12) } : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      avatarUrl: true,
+      role: true,
+      accountSize: true,
+      riskPerTrade: true,
+      leaderboardOptIn: true,
+      emailSignalAlerts: true,
+      twoFactorEnabled: true,
+      referralCode: true,
+    },
+  });
+
+  await markOnboardingStepComplete(user.id, "PROFILE_SETUP");
+
+  return success(updated);
+});

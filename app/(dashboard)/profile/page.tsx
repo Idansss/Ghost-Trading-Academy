@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import type { z } from "zod";
@@ -15,6 +15,14 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { MetricCard } from "@/components/shared/MetricCard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,10 +32,26 @@ import { profileSchema } from "@/lib/validators";
 
 type ProfileValues = z.infer<typeof profileSchema>;
 
+// CLAUDE FIX: 2FA setup was using window.prompt() which:
+//   (a) cannot render the QR code image, making setup impossible
+//   (b) is blocked by some browser popup blockers
+//   (c) has no way to display the backup codes in a copyable format
+// Replaced with a proper Dialog that shows the QR image, backup codes, and
+// a verification code input so users can actually complete setup.
+type TwoFASetupState = {
+  token: string;
+  qrCodeDataUrl: string;
+  backupCodes: string[];
+};
+
 export default function ProfilePage() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const { update } = useSession();
+  const [twoFASetup, setTwoFASetup] = useState<TwoFASetupState | null>(null);
+  const [twoFACode, setTwoFACode] = useState("");
+  const [twoFAVerifying, setTwoFAVerifying] = useState(false);
+  const twoFACodeRef = useRef<HTMLInputElement>(null);
   const { data, isError, refetch } = useQuery({
     queryKey: ["profile"],
     queryFn: () =>
@@ -304,31 +328,14 @@ export default function ProfilePage() {
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ action: "start" }),
                       });
-                      const payload = (await response.json()) as {
-                        token: string;
-                        qrCodeDataUrl: string;
-                        backupCodes: string[];
-                      };
-                      const code = window.prompt(
-                        `Scan QR in your authenticator app.\n\nBackup codes:\n${payload.backupCodes.join("\n")}\n\nEnter current 6-digit code to finish setup:`,
-                      );
-                      if (!code) return;
-                      const verify = await fetch("/api/auth/2fa/setup", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                          action: "verify",
-                          token: payload.token,
-                          code,
-                        }),
-                      });
-                      if (!verify.ok) {
-                        throw new Error("Failed to verify code.");
-                      }
-                      toast.success("2FA enabled.");
-                      await queryClient.invalidateQueries({ queryKey: ["profile"] });
+                      if (!response.ok) throw new Error("Failed to start 2FA setup.");
+                      const payload = (await response.json()) as TwoFASetupState;
+                      setTwoFASetup(payload);
+                      setTwoFACode("");
+                      // Focus the code input after dialog opens
+                      setTimeout(() => twoFACodeRef.current?.focus(), 100);
                     } catch (error) {
-                      toast.error(error instanceof Error ? error.message : "Failed to setup 2FA.");
+                      toast.error(error instanceof Error ? error.message : "Failed to start 2FA setup.");
                     }
                   }}
                 >
@@ -373,16 +380,14 @@ export default function ProfilePage() {
                 >
                   Copy link
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    const text = encodeURIComponent(
-                      `Join me on Ghost Trading Academy: ${referralLink}`,
-                    );
-                    window.open(`https://twitter.com/intent/tweet?text=${text}`, "_blank");
-                  }}
-                >
-                  Share
+                <Button variant="outline" asChild>
+                  <a
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join me on Ghost Trading Academy: ${referralLink}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Share
+                  </a>
                 </Button>
               </div>
             </CardContent>
@@ -390,6 +395,127 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* CLAUDE FIX: 2FA setup dialog — replaces window.prompt so users can
+          actually scan the QR code and copy their backup codes. */}
+      <Dialog
+        open={twoFASetup !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setTwoFASetup(null);
+            setTwoFACode("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Set up two-factor authentication</DialogTitle>
+            <DialogDescription>
+              Scan the QR code with your authenticator app (e.g. Google Authenticator,
+              Authy), then enter the 6-digit code to confirm.
+            </DialogDescription>
+          </DialogHeader>
+
+          {twoFASetup ? (
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                {/* CLAUDE FIX: QR code is a base64 data: URL generated server-side.
+                    next/image cannot pass data: URLs through the image CDN — use
+                    a native <img> so the QR code actually renders. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={twoFASetup.qrCodeDataUrl}
+                  alt="2FA QR code — scan with your authenticator app"
+                  width={200}
+                  height={200}
+                  className="rounded-lg"
+                />
+              </div>
+
+              <div className="rounded-2xl border border-border bg-muted/40 p-3">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">
+                  Backup codes — save these somewhere safe
+                </p>
+                <div className="grid grid-cols-2 gap-1 font-mono text-xs">
+                  {twoFASetup.backupCodes.map((code) => (
+                    <span key={code} className="rounded bg-background px-2 py-0.5 tabular-nums">
+                      {code}
+                    </span>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3 w-full"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(twoFASetup.backupCodes.join("\n"));
+                    toast.success("Backup codes copied to clipboard.");
+                  }}
+                >
+                  Copy backup codes
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="twofa-code">Verification code</Label>
+                <Input
+                  id="twofa-code"
+                  ref={twoFACodeRef}
+                  value={twoFACode}
+                  onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="123456"
+                  inputMode="numeric"
+                  maxLength={6}
+                />
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setTwoFASetup(null);
+                setTwoFACode("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              disabled={twoFACode.length !== 6 || twoFAVerifying}
+              onClick={async () => {
+                if (!twoFASetup) return;
+                setTwoFAVerifying(true);
+                try {
+                  const verify = await fetch("/api/auth/2fa/setup", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      action: "verify",
+                      token: twoFASetup.token,
+                      code: twoFACode,
+                    }),
+                  });
+                  if (!verify.ok) {
+                    toast.error("Invalid code — try again.");
+                    return;
+                  }
+                  toast.success("Two-factor authentication enabled.");
+                  setTwoFASetup(null);
+                  setTwoFACode("");
+                  await queryClient.invalidateQueries({ queryKey: ["profile"] });
+                } catch {
+                  toast.error("Failed to verify code. Please try again.");
+                } finally {
+                  setTwoFAVerifying(false);
+                }
+              }}
+            >
+              {twoFAVerifying ? "Verifying..." : "Enable 2FA"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
 }

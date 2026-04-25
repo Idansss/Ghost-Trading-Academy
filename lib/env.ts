@@ -50,6 +50,12 @@ const serverEnvSchema = z.object({
   // Legacy UploadThing CDN URLs may still exist in the database.
   UPLOADTHING_CDN_DOMAIN: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
   NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
+  // Sentry error monitoring — all optional; app works without them.
+  SENTRY_DSN: z.string().url().optional().or(z.literal("")).transform((v) => v || undefined),
+  NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional().or(z.literal("")).transform((v) => v || undefined),
+  SENTRY_AUTH_TOKEN: z.string().min(1).optional().or(z.literal("")).transform((v) => v || undefined),
+  SENTRY_ORG: z.string().min(1).optional().or(z.literal("")).transform((v) => v || undefined),
+  SENTRY_PROJECT: z.string().min(1).optional().or(z.literal("")).transform((v) => v || undefined),
   // AUDIT FIX: Use .optional().or(z.literal("")) so that empty strings in .env
   // (which is the default in .env.example) are accepted without failing min(1).
 });
@@ -73,6 +79,11 @@ const parsedEnv = serverEnvSchema.parse({
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
   UPLOADTHING_CDN_DOMAIN: process.env.UPLOADTHING_CDN_DOMAIN,
   NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN: process.env.NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN,
+  SENTRY_DSN: process.env.SENTRY_DSN,
+  NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
+  SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
+  SENTRY_ORG: process.env.SENTRY_ORG,
+  SENTRY_PROJECT: process.env.SENTRY_PROJECT,
 });
 
 const supabasePublicUrl = parsedEnv.NEXT_PUBLIC_SUPABASE_URL;

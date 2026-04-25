@@ -2,12 +2,23 @@ import { prisma } from "@/lib/prisma";
 import { apiError, safeJson } from "@/lib/utils";
 import { signShortLivedJwt, verifyShortLivedJwt } from "@/lib/jwt";
 import { decryptSecret, matchBackupCode, verifyTOTPPlain } from "@/lib/two-factor";
+import { checkRateLimit } from "@/lib/rate-limit";
+import { getClientIp } from "@/server/core/request-context";
 
 // AUDIT FIX: All authenticated API routes must opt out of static rendering
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const identifier = getClientIp(request) ?? "unknown";
+    const rate = await checkRateLimit("2fa", identifier);
+    if (!rate.success) {
+      return Response.json(
+        { error: "Too many 2FA attempts. Please try again later." },
+        { status: 429, headers: { "Retry-After": String(Math.max(1, Math.ceil((rate.reset - Date.now()) / 1000))) } },
+      );
+    }
+
     const body = await safeJson<{ token?: string; code?: string }>(request);
     if (!body.token || !body.code) {
       return apiError("Token and code are required.", 400);

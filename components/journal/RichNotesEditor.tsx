@@ -12,12 +12,16 @@ import {
   ImagePlus,
   List,
   ListOrdered,
+  Loader2,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import "@/styles/tiptap.css";
 import { cn } from "@/lib/utils";
+import { uploadFileToSupabaseStorage } from "@/lib/storage/upload-client";
 
 type SaveState = "idle" | "saving" | "saved" | "error";
+type UploadState = "idle" | "uploading";
 
 function ToolbarButton({
   active,
@@ -59,6 +63,7 @@ export function RichNotesEditor({
   const [characterCount, setCharacterCount] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
   const [saveState, setSaveState] = useState<SaveState>("saved");
+  const [uploadState, setUploadState] = useState<UploadState>("idle");
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -149,19 +154,21 @@ export function RichNotesEditor({
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
 
     if (!file || !editor) {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        editor.chain().focus().setImage({ src: reader.result }).run();
-      }
-    };
-    reader.readAsDataURL(file);
-    event.target.value = "";
+    setUploadState("uploading");
+    try {
+      const publicUrl = await uploadFileToSupabaseStorage(file, "tradeNote");
+      editor.chain().focus().setImage({ src: publicUrl }).run();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to upload image.");
+    } finally {
+      setUploadState("idle");
+    }
   };
 
   return (
@@ -217,10 +224,14 @@ export function RichNotesEditor({
           <AlignCenter className="h-4 w-4" />
         </ToolbarButton>
         <ToolbarButton
-          title="Insert image"
-          onClick={() => inputRef.current?.click()}
+          title={uploadState === "uploading" ? "Uploading..." : "Insert image"}
+          onClick={() => uploadState === "idle" && inputRef.current?.click()}
         >
-          <ImagePlus className="h-4 w-4" />
+          {uploadState === "uploading" ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <ImagePlus className="h-4 w-4" />
+          )}
         </ToolbarButton>
         <input
           ref={inputRef}

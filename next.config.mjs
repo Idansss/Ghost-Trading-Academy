@@ -1,4 +1,5 @@
 import withPWA from "next-pwa";
+import { withSentryConfig } from "@sentry/nextjs";
 
 /** @type {import('next').NextConfig} */
 // AUDIT FIX: Chat images should only load from trusted remotes. The previous
@@ -72,7 +73,7 @@ const nextConfig = {
   },
 };
 
-export default withPWA({
+const pwaConfig = withPWA({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
   runtimeCaching: [
@@ -89,3 +90,20 @@ export default withPWA({
     },
   ],
 })(nextConfig);
+
+export default withSentryConfig(pwaConfig, {
+  // Suppress the Sentry CLI upload banner in CI output
+  silent: true,
+  // Tunnels Sentry requests through /monitoring so ad-blockers don't drop them
+  tunnelRoute: "/monitoring",
+  // Source map upload — requires SENTRY_AUTH_TOKEN in CI env
+  hideSourceMaps: true,
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  webpack: {
+    // Tree-shake Sentry debug logging from production bundles
+    treeshake: { removeDebugLogging: true },
+    // Automatically instrument Next.js API routes and pages
+    autoInstrumentServerFunctions: true,
+  },
+});

@@ -1,12 +1,14 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { getRedisClient } from "@/lib/redis";
 
-type LimiterType = "login" | "register" | "api";
+type LimiterType = "login" | "register" | "api" | "2fa";
 
 const limiterConfig: Record<LimiterType, { tokens: number; window: `${number} m` | `${number} h` }> = {
   login: { tokens: 5, window: "15 m" },
   register: { tokens: 3, window: "1 h" },
   api: { tokens: 100, window: "1 m" },
+  // Strict limit for TOTP/backup-code submission — 5 attempts per 15 min per IP
+  "2fa": { tokens: 5, window: "15 m" },
 };
 
 const limiters = new Map<LimiterType, Ratelimit | null>();

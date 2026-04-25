@@ -1,5 +1,43 @@
 # Changelog
 
+## Audit Round — 2026-04-25
+
+### Security
+
+- **DOMPurify sanitization** — Replaced regex-based `sanitizeHtml` with `isomorphic-dompurify`. Added `sanitizeText` (strips all tags) for plain text fields and `sanitizeRichText` (safe allowlist) for rich text. All callers migrated to `sanitizeText`; `sanitizeHtml` kept as a deprecated alias.
+- **Rate limit 2FA endpoints** — Added a dedicated `"2fa"` limiter (5 req / 15 min per IP). Applied to `/api/auth/2fa/verify-login` and `/api/auth/2fa/setup`. `/api/auth/2fa/challenge` was already protected via the `"login"` limiter.
+- **2FA JWT hardening** — Removed raw backup codes from the JWT payload in the setup flow; only bcrypt hashes are stored in the token. Raw codes are already returned in the response body for the user to copy.
+- **Referral code strength** — Increased nanoid length from 8 to 10 characters (~50 bits of entropy). Retry cap reduced from 10 to 5 with a hard error on exhaustion.
+- **Image URL guard** — `assertTrustedImageUrl` added to `/api/member-wins` POST and `/api/profile` PATCH, blocking arbitrary external image URLs.
+- **Twitter share button** — Replaced `window.open()` with a proper `<a href target="_blank" rel="noopener noreferrer">` to prevent opener leaks.
+
+### Error Monitoring
+
+- **Sentry integration** — Installed `@sentry/nextjs`. Wired via `instrumentation.ts` (server + edge, using `register()`) and `instrumentation-client.ts` (browser). All five Sentry env vars are optional.
+- **`beforeSend` redaction** — Strips `Authorization`, `Cookie`, `X-Api-Key` headers and request body from all events before they leave the process.
+- **`createRouteHandler` Sentry capture** — Server 5xx errors are captured via `Sentry.captureException` with `correlationId` and route in extras. 4xx errors (expected `AppError`) are not captured to keep noise low.
+- **`global-error.tsx`** — Now calls `Sentry.captureException` so root-layout crashes are always reported.
+
+### Refactor
+
+- **`createRouteHandler` migration** — Migrated `/api/profile` (GET + PATCH), `/api/notifications` (GET + PATCH), and `/api/member-wins` (GET + POST) from manual try/catch to `createRouteHandler`. Response shape now uses the standard `{ success, data }` envelope; `fetchJson` client handles both shapes transparently.
+- **Notifications route** — Inlined query/patch Zod schemas, removed `console.error` calls (structured logging via `createRouteHandler`).
+- **`tradeNote` upload purpose** — Added `tradeNote` to `SignedUploadPurpose` enum (4 MB, images only, folder `trade-notes/{userId}`).
+
+### Bug Fixes
+
+- **RichNotesEditor base64 images** — Image inserts now upload to Supabase Storage via `uploadFileToSupabaseStorage("tradeNote")` instead of embedding raw base64 data URIs. Shows a spinner in the toolbar during upload; surfaces errors via `sonner` toast.
+- **Profile API 401 handling** — `handleApiError` now correctly maps `AppError.unauthorized()` to HTTP 401 (previous string-match against `"Unauthorized"` never matched the actual message `"Authentication required."`).
+- **Login button stuck** — `setIsSubmitting(false)` now always runs in a `finally` block; previously a thrown exception left the button permanently disabled.
+- **`window.prompt` for 2FA** — Replaced with a full shadcn Dialog showing the QR code, backup codes with a copy button, and a verification code input.
+
+### Polish
+
+- **21 loading skeletons** — All dashboard route segments that have a `page.tsx` now have a matching `loading.tsx`. New files: leaderboard, outlook, signals/[id], journal/weekly-review, journal/weekly-review/history, journal/import, notifications/preferences, community/chat/[channelId].
+- **OG/Twitter metadata** — Added `og:title`, `og:description`, `og:type`, `twitter:card` to `app/layout.tsx`.
+- **404 page** — Created branded `app/not-found.tsx` with Ghost icon, Dashboard and Home CTAs.
+- **Root error boundary** — Created `app/global-error.tsx` to catch root-layout errors with a safe recovery UI.
+
 ## Part 1 - Core Platform Enhancements
 
 ### Trading Journal and Analytics

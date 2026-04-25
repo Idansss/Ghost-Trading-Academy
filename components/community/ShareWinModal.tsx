@@ -163,7 +163,10 @@ export function ShareWinModal({
             <Label>Chart Screenshot (optional)</Label>
             {imagePreview ? (
               <div className="relative overflow-hidden rounded-xl border border-border">
-                {/* Use native img for blob: preview URLs; next/image does not load blob URLs reliably */}
+                {/* CLAUDE FIX: blob: URLs are local object URLs created by URL.createObjectURL —
+                    next/image cannot optimize them (they never hit the CDN). Native <img> is
+                    the correct element here. eslint-disable needed to suppress the lint rule. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={imagePreview}
                   alt="Win screenshot preview"
