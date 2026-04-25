@@ -228,7 +228,14 @@ export function MessageComposer({
               return;
             }
 
-            clearImage();
+            // Do not call clearImage() here — it resets the file input and can break
+            // the picker on some browsers. Only drop the previous preview / upload state.
+            if (image?.localUrl) {
+              URL.revokeObjectURL(image.localUrl);
+            }
+            setImage(null);
+            reset();
+
             const dimensions = await readImageDimensions(file);
             const localUrl = URL.createObjectURL(file);
             setImage({

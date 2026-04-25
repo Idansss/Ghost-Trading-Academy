@@ -47,6 +47,7 @@ export async function uploadFileToSupabaseStorage(
 
   const signResponse = await fetch("/api/storage/signed-upload", {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       purpose,
@@ -57,7 +58,8 @@ export async function uploadFileToSupabaseStorage(
   });
 
   const payload = (await signResponse.json().catch(() => ({}))) as {
-    error?: string;
+    error?: string | { code?: string; message?: string };
+    details?: unknown;
     bucket?: string;
     path?: string;
     token?: string;
@@ -65,7 +67,27 @@ export async function uploadFileToSupabaseStorage(
   };
 
   if (!signResponse.ok) {
-    throw new Error(payload.error ?? "Could not start upload.");
+    const fromPayload = (() => {
+      const e = payload.error;
+      if (typeof e === "string") return e;
+      if (e && typeof e === "object" && "message" in e && typeof e.message === "string") {
+        return e.message;
+      }
+      return null;
+    })();
+
+    if (signResponse.status === 401) {
+      throw new Error("Sign in required to upload images.");
+    }
+    if (signResponse.status === 403) {
+      throw new Error(fromPayload ?? "You do not have permission to upload this file type.");
+    }
+    if (signResponse.status === 503) {
+      throw new Error(
+        fromPayload ?? "Storage is not configured. Check Supabase environment variables on the server.",
+      );
+    }
+    throw new Error(fromPayload ?? "Could not start upload.");
   }
 
   const { bucket, path, token, publicUrl } = payload as SignResponse;
