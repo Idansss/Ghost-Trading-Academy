@@ -1,6 +1,6 @@
 {
-  "name": "Ghost Trading Academy",
-  "short_name": "Ghost Academy",
+  "name": "The Thesis Desk",
+  "short_name": "Thesis Desk",
   "description": "Private crypto trading desk web app",
   "start_url": "/dashboard",
   "display": "standalone",

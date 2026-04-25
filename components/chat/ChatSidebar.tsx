@@ -107,7 +107,7 @@ export function ChatSidebar({
       <div className="border-b border-border px-4 py-4">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <p className="text-sm font-semibold tracking-wide text-primary">Ghost Trading Academy</p>
+            <p className="text-sm font-semibold tracking-wide text-primary">The Thesis Desk</p>
             <p className="text-xs text-muted-foreground">Community chat</p>
           </div>
           {isAdmin ? (

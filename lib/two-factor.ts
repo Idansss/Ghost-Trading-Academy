@@ -26,7 +26,7 @@ export function decryptSecret(payload: string) {
   return decrypted.toString("utf8");
 }
 
-export function generateTOTPSecret(email: string, issuer = "Ghost Trading Academy") {
+export function generateTOTPSecret(email: string, issuer = "The Thesis Desk") {
   const secret = generateSecret();
   const otpAuthUrl = generateURI({
     issuer,

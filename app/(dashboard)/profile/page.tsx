@@ -382,7 +382,7 @@ export default function ProfilePage() {
                 </Button>
                 <Button variant="outline" asChild>
                   <a
-                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join me on Ghost Trading Academy: ${referralLink}`)}`}
+                    href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Join me on The Thesis Desk: ${referralLink}`)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >

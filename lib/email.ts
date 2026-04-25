@@ -126,7 +126,7 @@ export async function sendMonthlyReportEmail(
       <div style="font-family: Inter, Arial, sans-serif; color: #111114; padding: 24px;">
         <h1 style="font-weight: 600; margin-bottom: 16px;">Monthly Report</h1>
         <p style="margin: 0 0 12px;">Hi ${name},</p>
-        <p style="margin: 0;">Your monthly Ghost Trading Academy report is attached.</p>
+        <p style="margin: 0;">Your monthly The Thesis Desk report is attached.</p>
       </div>
     `,
     attachments: [

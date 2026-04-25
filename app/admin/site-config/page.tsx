@@ -210,7 +210,7 @@ export default function AdminSiteConfigPage() {
                   <Label htmlFor="heroHeadline">Hero Headline</Label>
                   <Input
                     id="heroHeadline"
-                    placeholder="Trade with the Ghost Desk. Stay Ahead of the Market."
+                    placeholder="Trade with The Thesis Desk. Stay Ahead of the Market."
                     {...landingForm.register("heroHeadline")}
                   />
                   <p className="text-xs text-muted-foreground">

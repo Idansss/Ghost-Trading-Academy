@@ -20,7 +20,7 @@ import { LandingCta } from "@/components/landing/LandingCta";
 
 export const revalidate = 3600;
 
-const DEFAULT_HEADLINE = "Trade with the Ghost Desk. Stay Ahead of the Market.";
+const DEFAULT_HEADLINE = "Trade with The Thesis Desk. Stay Ahead of the Market.";
 const DEFAULT_SUBHEADLINE =
   "Institutional-grade crypto signals, a professional trading journal, live market analytics, and a community of serious traders — all in one private desk.";
 
@@ -68,7 +68,7 @@ const TESTIMONIALS = [
     name: "Marcus T.",
     role: "Crypto Trader — 2 years",
     quote:
-      "Ghost signals are precise. I stopped gambling and started planning. My win rate went from 38% to 61% in 90 days of journaling with the desk.",
+      "The signals are precise. I stopped gambling and started planning. My win rate went from 38% to 61% in 90 days of journaling with the desk.",
   },
   {
     name: "Sophia R.",
@@ -405,7 +405,7 @@ export default async function HomePage() {
             <span className="text-sm font-semibold">{platformName}</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} Ghost Trading Desk. Private membership — not financial advice.
+            &copy; {new Date().getFullYear()} The Thesis Desk. Private membership — not financial advice.
           </p>
           <Link
             href="/auth/login"

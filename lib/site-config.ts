@@ -36,7 +36,7 @@ const DEFAULT_SITE_CONFIG: SiteConfigRecord = {
   accentColor: "#D4A017",
   logoUrl: null,
   faviconUrl: null,
-  platformName: "Ghost Trading Academy",
+  platformName: "The Thesis Desk",
   supportEmail: null,
   telegramLink: null,
   twitterLink: null,
@@ -73,7 +73,7 @@ export async function getSiteConfig(): Promise<SiteConfigRecord> {
   await prisma.$executeRaw`
     INSERT INTO "SiteConfig" ("id", "tickerSymbols", "ctaLabel", "ctaUrl", "isWaitlistMode", "accentColor", "platformName", "defaultTimezone", "maintenanceMode", "createdAt", "updatedAt")
     VALUES ('main', ARRAY['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'BNBUSDT', 'XRPUSDT']::TEXT[],
-            'Apply for Access', '/auth/login', false, '#D4A017', 'Ghost Trading Academy', 'UTC', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            'Apply for Access', '/auth/login', false, '#D4A017', 'The Thesis Desk', 'UTC', false, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     ON CONFLICT ("id") DO NOTHING
   `;
 

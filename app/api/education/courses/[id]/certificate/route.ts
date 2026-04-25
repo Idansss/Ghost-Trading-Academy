@@ -39,7 +39,7 @@ export async function GET(
 
     const pdf = await renderToBuffer(
       React.createElement(CourseCertificate, {
-        platformName: siteConfig?.platformName ?? "Ghost Trading Academy",
+        platformName: siteConfig?.platformName ?? "The Thesis Desk",
         memberName: user.name ?? "Member",
         courseName: course.title,
         completionDate: format(enrollment.completedAt, "MMMM d, yyyy"),

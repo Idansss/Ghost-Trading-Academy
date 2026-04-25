@@ -103,7 +103,7 @@ export async function generateMonthlyReportBuffer(userId: string, month: string)
 
   const report = (
     <MonthlyReport
-      platformName={siteConfig?.platformName ?? "Ghost Trading Academy"}
+      platformName={siteConfig?.platformName ?? "The Thesis Desk"}
       monthLabel={format(start, "MMMM yyyy")}
       memberName={user.name}
       summary={{

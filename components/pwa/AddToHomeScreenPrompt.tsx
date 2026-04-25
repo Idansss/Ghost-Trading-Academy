@@ -78,7 +78,7 @@ export function AddToHomeScreenPrompt() {
 
   return (
     <div className="fixed bottom-20 left-4 right-4 z-50 rounded-2xl border border-border bg-card p-4 shadow-lg md:left-auto md:right-6 md:w-[360px]">
-      <p className="text-sm font-medium">Install Ghost Trading Academy</p>
+      <p className="text-sm font-medium">Install The Thesis Desk</p>
       <p className="mt-1 text-xs text-muted-foreground">
         {isIos
           ? "Tap the Share icon, then 'Add to Home Screen'."
