@@ -9,6 +9,18 @@ export const DropdownMenuPortal = DropdownMenuPrimitive.Portal;
 export const DropdownMenuSub = DropdownMenuPrimitive.Sub;
 export const DropdownMenuRadioGroup = DropdownMenuPrimitive.RadioGroup;
 
+export function DropdownMenuSeparator({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Separator>) {
+  return (
+    <DropdownMenuPrimitive.Separator
+      className={cn("-mx-1 my-1 h-px bg-border", className)}
+      {...props}
+    />
+  );
+}
+
 export function DropdownMenuContent({
   className,
   sideOffset = 4,
