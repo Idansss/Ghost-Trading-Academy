@@ -14,7 +14,7 @@ export function MetricCard({
   helper?: string;
 }) {
   return (
-    <Card>
+    <Card className="overflow-hidden">
       <CardHeader className="pb-2.5">
         <CardTitle className="text-xs font-medium text-muted-foreground">
           {label}

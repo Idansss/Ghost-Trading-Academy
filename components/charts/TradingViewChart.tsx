@@ -64,24 +64,56 @@ function getPricePrecision(data: CandlestickData<UTCTimestamp>[]) {
   return 6;
 }
 
-async function fetchKlines(symbol: string, interval: string) {
-  const response = await fetch(
-    `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=300`,
-  );
+const BYBIT_INTERVAL_MAP: Record<string, string> = {
+  "15m": "15",
+  "1h": "60",
+  "4h": "240",
+  "1d": "D",
+};
 
-  if (!response.ok) {
-    throw new Error("Unable to load chart data from Binance.");
+async function fetchKlinesFromBybit(symbol: string, interval: string) {
+  const bybitInterval = BYBIT_INTERVAL_MAP[interval] ?? "240";
+  const response = await fetch(
+    `https://api.bybit.com/v5/market/kline?category=spot&symbol=${encodeURIComponent(symbol)}&interval=${bybitInterval}&limit=300`,
+  );
+  if (!response.ok) throw new Error("Bybit unavailable.");
+  const body = (await response.json()) as {
+    retCode?: number;
+    result?: { list?: string[][] };
+  };
+  const list = body.result?.list;
+  if (!list?.length) throw new Error("No data from Bybit.");
+  return list
+    .slice()
+    .reverse()
+    .map((entry) => ({
+      time: Math.floor(Number(entry[0]) / 1000) as UTCTimestamp,
+      open: Number(entry[1]),
+      high: Number(entry[2]),
+      low: Number(entry[3]),
+      close: Number(entry[4]),
+    }));
+}
+
+async function fetchKlines(symbol: string, interval: string) {
+  const binance = await fetch(
+    `https://api.binance.com/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=300`,
+  ).catch(() => null);
+
+  if (binance?.ok) {
+    const payload = (await binance.json()) as BinanceKline[];
+    if (payload.length) {
+      return payload.map((entry) => ({
+        time: Math.floor(entry[0] / 1000) as UTCTimestamp,
+        open: Number(entry[1]),
+        high: Number(entry[2]),
+        low: Number(entry[3]),
+        close: Number(entry[4]),
+      }));
+    }
   }
 
-  const payload = (await response.json()) as BinanceKline[];
-
-  return payload.map((entry) => ({
-    time: Math.floor(entry[0] / 1000) as UTCTimestamp,
-    open: Number(entry[1]),
-    high: Number(entry[2]),
-    low: Number(entry[3]),
-    close: Number(entry[4]),
-  }));
+  return fetchKlinesFromBybit(symbol, interval);
 }
 
 export function TradingViewChart({
