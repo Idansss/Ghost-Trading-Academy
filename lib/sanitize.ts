@@ -1,4 +1,4 @@
-import DOMPurify from "isomorphic-dompurify";
+import sanitize from "sanitize-html";
 import { AppError } from "@/server/core/app-error";
 import { env } from "@/lib/env";
 
@@ -48,7 +48,7 @@ export function isTrustedMediaUrl(urlString: string): boolean {
  * Replaces the old regex-based stripMarkup which could be bypassed by obfuscated tags.
  */
 export function sanitizeText(value: string): string {
-  return DOMPurify.sanitize(value, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] }).trim();
+  return sanitize(value, { allowedTags: [], allowedAttributes: {} }).trim();
 }
 
 /** @deprecated Use sanitizeText instead */
@@ -56,20 +56,20 @@ export function sanitizeHtml(value: string): string {
   return sanitizeText(value);
 }
 
-/**
- * Allow a safe subset of HTML tags — use for rich text fields (TipTap output, markdown-rendered content).
- * Blocks scripts, event handlers, javascript: hrefs, and data: src attributes.
- */
 export function sanitizeRichText(value: string): string {
-  return DOMPurify.sanitize(value, {
-    ALLOWED_TAGS: [
+  return sanitize(value, {
+    allowedTags: [
       "p", "br", "strong", "em", "u", "s", "ul", "ol", "li",
       "h1", "h2", "h3", "h4", "h5", "h6",
       "blockquote", "code", "pre", "a", "img",
     ],
-    ALLOWED_ATTR: ["href", "target", "rel", "src", "alt", "class"],
-    ALLOW_DATA_ATTR: false,
-    FORBID_ATTR: ["style", "onclick", "onerror", "onload"],
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      img: ["src", "alt", "class"],
+      "*": ["class"],
+    },
+    allowedSchemes: ["https", "http"],
+    disallowedTagsMode: "discard",
   }).trim();
 }
 
