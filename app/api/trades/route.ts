@@ -17,6 +17,7 @@ import { parseJsonBody, parseSearchParams } from "@/server/core/validation";
 import { tradeService } from "@/server/services/trade-service";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 const tradeListQuerySchema = z.object({
   month: z.string().optional(),

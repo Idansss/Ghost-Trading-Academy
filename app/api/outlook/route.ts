@@ -7,6 +7,7 @@ import { outlookSchema } from "@/lib/validators";
 
 // AUDIT FIX: All authenticated API routes must opt out of static rendering
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export async function GET(request: Request) {
   try {

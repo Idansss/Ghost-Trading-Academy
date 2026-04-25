@@ -6,6 +6,7 @@ import { parseJsonBody, parseSearchParams } from "@/server/core/validation";
 import { signalService } from "@/server/services/signal-service";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 30;
 
 export const GET = createRouteHandler(async ({ request }) => {
   const user = await requireAuthenticatedUser();
