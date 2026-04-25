@@ -9,6 +9,7 @@ import {
   LineChart,
   Megaphone,
   MessageSquare,
+  ScrollText,
   Settings2,
   Shield,
   Send,
@@ -36,6 +37,7 @@ export const primaryNav: NavigationItem[] = [
   { href: "/community/chat", label: "Chat", icon: MessageSquare, match: "prefix" },
   { href: "/watchlist", label: "Watchlist", icon: LineChart },
   { href: "/community/leaderboard", label: "Leaderboard", icon: BarChart3, match: "prefix" },
+  { href: "/guide", label: "Platform Guide", icon: ScrollText, match: "exact" },
 ];
 
 export const adminNav: NavigationItem = {
