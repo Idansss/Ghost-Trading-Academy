@@ -37,11 +37,32 @@ export default function WatchlistPage() {
     queryKey: ["watchlist-ticker", watchlistSymbols],
     enabled: watchlistSymbols.length > 0,
     queryFn: async () => {
-      const params = new URLSearchParams({ symbols: watchlistSymbols.join(",") });
-      const response = await fetchJson<{
-        tickers: Array<{ symbol: string; lastPrice: string; priceChangePercent: string }>;
-      }>(`/api/market/ticker-24hr?${params.toString()}`);
-      return response.tickers;
+      const results = await Promise.all(
+        watchlistSymbols.map(async (symbol) => {
+          const binance = await fetch(
+            `https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`,
+          ).catch(() => null);
+          if (binance?.ok) {
+            const payload = (await binance.json()) as { lastPrice?: string; priceChangePercent?: string };
+            if (typeof payload.lastPrice === "string") {
+              return { symbol, lastPrice: payload.lastPrice, priceChangePercent: String(payload.priceChangePercent ?? "0") };
+            }
+          }
+          const bybit = await fetch(
+            `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${encodeURIComponent(symbol)}`,
+          ).catch(() => null);
+          if (bybit?.ok) {
+            const body = (await bybit.json()) as { result?: { list?: Array<{ lastPrice?: string; price24hPcnt?: string }> } };
+            const row = body.result?.list?.[0];
+            if (row?.lastPrice) {
+              const pct = Number(row.price24hPcnt ?? 0);
+              return { symbol, lastPrice: row.lastPrice, priceChangePercent: (pct * 100).toFixed(4) };
+            }
+          }
+          return null;
+        }),
+      );
+      return results.filter((r): r is { symbol: string; lastPrice: string; priceChangePercent: string } => r !== null);
     },
     refetchInterval: 10_000,
   });
