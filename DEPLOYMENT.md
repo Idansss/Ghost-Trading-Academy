@@ -1,4 +1,4 @@
-# Ghost Trading Academy Deployment Guide
+# The Thesis Desk — deployment guide
 
 ## 1) Prerequisites
 - Node.js 20+

@@ -1,6 +1,17 @@
 import { Prisma } from "@prisma/client";
+import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { prisma } from "@/lib/prisma";
 import { DEFAULT_TICKER_SYMBOLS } from "@/lib/constants";
+
+/** Legacy DB value; UI and new inserts use {@link DEFAULT_PLATFORM_NAME}. */
+const LEGACY_PLATFORM_NAME = "Ghost Trading Academy";
+
+function withCanonicalPlatformName<T extends { platformName: string }>(row: T): T {
+  if (row.platformName === LEGACY_PLATFORM_NAME) {
+    return { ...row, platformName: DEFAULT_PLATFORM_NAME };
+  }
+  return row;
+}
 
 export type SiteConfigRecord = {
   id: string;
@@ -67,7 +78,7 @@ export async function getSiteConfig(): Promise<SiteConfigRecord> {
   `;
 
   if (existing[0]) {
-    return existing[0];
+    return withCanonicalPlatformName(existing[0]);
   }
 
   await prisma.$executeRaw`
@@ -88,7 +99,10 @@ export async function getSiteConfig(): Promise<SiteConfigRecord> {
     LIMIT 1
   `;
 
-  return created[0] ?? DEFAULT_SITE_CONFIG;
+  if (!created[0]) {
+    return DEFAULT_SITE_CONFIG;
+  }
+  return withCanonicalPlatformName(created[0]);
 }
 
 export async function updateSiteConfig(

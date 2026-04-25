@@ -283,7 +283,7 @@ model SiteConfig {
   accentColor       String  @default("#D4A017")
   logoUrl           String?
   faviconUrl        String?
-  platformName      String  @default("Ghost Trading Academy")
+  platformName      String  @default("The Thesis Desk")
   supportEmail      String?
   telegramLink      String?
   twitterLink       String?

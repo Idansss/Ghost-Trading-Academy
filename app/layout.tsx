@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { getSiteConfig } from "@/lib/site-config";
@@ -76,6 +77,7 @@ export default async function RootLayout({
         <AppProviders>{children}</AppProviders>
         <Toaster richColors position="bottom-right" closeButton />
         <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

@@ -1,4 +1,4 @@
-# Ghost Trading Academy
+# The Thesis Desk
 
 A full-stack trading community platform for crypto traders: signals,
 trade journal, daily outlook, education hub, analytics, and community.

@@ -184,7 +184,7 @@ async function main() {
     update: {},
     create: {
       id: "main",
-      platformName: "Ghost Trading Academy",
+      platformName: "The Thesis Desk",
       accentColor: "#D4A017",
       defaultTimezone: "UTC",
       ctaLabel: "Apply for Access",
