@@ -258,7 +258,7 @@ export function OutlookForm({
         </div>
         <div className="space-y-3">
           {avoidToday.map((item, index) => (
-            <div key={`${index}-${item}`} className="grid grid-cols-[1fr_auto] gap-3">
+            <div key={index} className="grid grid-cols-[1fr_auto] gap-3">
               <Input
                 value={item}
                 placeholder="Chasing moves already 5%+ extended"
