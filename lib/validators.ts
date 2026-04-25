@@ -113,13 +113,13 @@ export const signalIdParamsSchema = z.object({
 
 export const outlookSchema = z.object({
   marketBias: z.nativeEnum(MarketBias),
-  biasExplanation: z.string().min(20),
+  biasExplanation: z.string().min(1, "Bias explanation is required."),
   chartImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
   coinsToWatch: z
     .array(
       z.object({
-        coin: z.string().min(2),
-        note: z.string().min(5),
+        coin: z.string().min(1, "Coin is required."),
+        note: z.string().min(1, "Note is required."),
       }),
     )
     .min(1),
@@ -132,7 +132,7 @@ export const outlookSchema = z.object({
       }),
     )
     .min(1),
-  avoidToday: z.array(z.string().min(5)).min(1),
+  avoidToday: z.array(z.string().min(1, "Rule cannot be empty.")).min(1),
 });
 
 export const resourceSchema = z.object({

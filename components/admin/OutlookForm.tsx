@@ -97,16 +97,21 @@ export function OutlookForm({
   return (
     <form
       className="grid gap-6"
-      onSubmit={form.handleSubmit(async (values) => {
-        await onSubmit(values);
-        toast.success(
-          initialValues ? "Today's outlook has been updated." : "Today's outlook has been posted.",
-        );
-        if (redirectTo) {
-          router.push(redirectTo);
-        }
-        router.refresh();
-      })}
+      onSubmit={form.handleSubmit(
+        async (values) => {
+          await onSubmit(values);
+          toast.success(
+            initialValues ? "Today's outlook has been updated." : "Today's outlook has been posted.",
+          );
+          if (redirectTo) {
+            router.push(redirectTo);
+          }
+          router.refresh();
+        },
+        () => {
+          toast.error("Please fill in all required fields before posting.");
+        },
+      )}
     >
       <div className="space-y-3">
         <Label>Market bias</Label>
