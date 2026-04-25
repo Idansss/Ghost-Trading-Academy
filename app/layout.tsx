@@ -5,6 +5,7 @@ import "./globals.css";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { getSiteConfig } from "@/lib/site-config";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -74,6 +75,7 @@ export default async function RootLayout({
       >
         <AppProviders>{children}</AppProviders>
         <Toaster richColors position="bottom-right" closeButton />
+        <Analytics />
       </body>
     </html>
   );
