@@ -22,6 +22,12 @@ const credentialsSchema = z.object({
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
+  // Allow trusted localhost deployments (e.g. `npm run start` locally) while
+  // keeping explicit env-based control for non-local environments.
+  trustHost:
+    process.env.AUTH_TRUST_HOST === "true" ||
+    env.nextAuthUrl.includes("localhost") ||
+    env.nextAuthUrl.includes("127.0.0.1"),
   session: {
     strategy: "jwt",
     // AUDIT FIX: Set a sensible session expiry. 7 days matches typical "remember me"
