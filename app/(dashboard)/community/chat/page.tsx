@@ -1,7 +1,6 @@
 import { HydrationBoundary, QueryClient, dehydrate } from "@tanstack/react-query";
 import { Prisma } from "@prisma/client";
 import { ChatLayout } from "@/components/chat/ChatLayout";
-import { PageHeader } from "@/components/shared/PageHeader";
 import { requireUser } from "@/lib/auth";
 import { mapChannel } from "@/lib/chat";
 import { prisma } from "@/lib/prisma";
@@ -145,8 +144,7 @@ export default async function CommunityChatPage({
   queryClient.setQueryData(["chat", "channels"], sortedChannels);
 
   return (
-    <div className="space-y-5">
-      <PageHeader eyebrow="Community" title="Community Chat" description="Live desk chat, DMs, and announcements." />
+    <div className="flex h-full flex-col overflow-hidden -mx-4 -mt-4 -mb-24 sm:-mx-5 md:-mt-5 lg:-mx-6">
       <HydrationBoundary state={dehydrate(queryClient)}>
         <ChatLayout initialChannels={sortedChannels} initialChannelId={params.channel ?? null} />
       </HydrationBoundary>

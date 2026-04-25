@@ -52,7 +52,7 @@ export function ChatLayout({
   };
 
   return (
-    <div className="surface-card relative flex min-h-[calc(100dvh-11rem)] overflow-hidden p-0 md:min-h-[650px]">
+    <div className="surface-card relative flex h-full overflow-hidden p-0">
       {/* AUDIT FIX: Mobile navigation now uses transform-based panel swapping to
           avoid layout jumps when moving between the sidebar and chat window. */}
       <div
