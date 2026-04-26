@@ -7,6 +7,17 @@ const authConfig = {
     signIn: "/auth/login",
   },
   callbacks: {
+    // CLAUDE FIX: Without this callback, authConfig (used by the edge middleware)
+    // has no session callback, so auth.user.role is always undefined in the
+    // authorized() check below. Any admin route the router-cache hasn't seen
+    // before gets a fresh server request → middleware fires → role is missing →
+    // redirect to /dashboard. Mapping token.role here is edge-safe (no DB call).
+    session({ session, token }) {
+      if (session.user) {
+        session.user.role = token.role as string as never;
+      }
+      return session;
+    },
     authorized({ auth, request }) {
       const pathname = request.nextUrl.pathname;
       const isAuthed = Boolean(auth?.user);
