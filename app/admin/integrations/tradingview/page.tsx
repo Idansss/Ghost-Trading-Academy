@@ -70,23 +70,24 @@ export default function TradingViewIntegrationPage() {
 
   const configQuery = useQuery({
     queryKey: ["admin-tv-webhook"],
-    queryFn: () => fetchJson<{ data: WebhookConfig }>("/api/admin/tradingview/webhook").then((r) => r.data),
+    // CLAUDE FIX: fetchJson already unwraps the { success, data } envelope — do not double-unwrap with .then(r => r.data)
+    queryFn: () => fetchJson<WebhookConfig>("/api/admin/tradingview/webhook"),
   });
 
   const logsQuery = useQuery({
     queryKey: ["admin-tv-webhook-logs"],
+    // CLAUDE FIX: same double-unwrap fix — fetchJson returns { logs } directly, not { data: { logs } }
     queryFn: () =>
-      fetchJson<{ data: { logs: WebhookLog[] } }>("/api/admin/tradingview/webhook/logs?limit=50").then(
-        (r) => r.data.logs,
+      fetchJson<{ logs: WebhookLog[] }>("/api/admin/tradingview/webhook/logs?limit=50").then(
+        (r) => r.logs,
       ),
     refetchInterval: 30_000,
   });
 
   const regenerateMutation = useMutation({
+    // CLAUDE FIX: same double-unwrap fix — fetchJson returns WebhookConfig directly
     mutationFn: () =>
-      fetchJson<{ data: WebhookConfig }>("/api/admin/tradingview/webhook/regenerate", { method: "POST" }).then(
-        (r) => r.data,
-      ),
+      fetchJson<WebhookConfig>("/api/admin/tradingview/webhook/regenerate", { method: "POST" }),
     onSuccess: (data) => {
       queryClient.setQueryData(["admin-tv-webhook"], data);
       setConfirmRegenerate(false);
@@ -98,10 +99,9 @@ export default function TradingViewIntegrationPage() {
   });
 
   const toggleMutation = useMutation({
+    // CLAUDE FIX: same double-unwrap fix
     mutationFn: () =>
-      fetchJson<{ data: WebhookConfig }>("/api/admin/tradingview/webhook/toggle", { method: "PATCH" }).then(
-        (r) => r.data,
-      ),
+      fetchJson<WebhookConfig>("/api/admin/tradingview/webhook/toggle", { method: "PATCH" }),
     onSuccess: (data) => {
       queryClient.setQueryData(["admin-tv-webhook"], data);
       toast.success(data.isActive ? "Webhook enabled." : "Webhook disabled.");
@@ -112,6 +112,11 @@ export default function TradingViewIntegrationPage() {
   });
 
   const copyText = useCallback(async (text: string, label: string) => {
+    // CLAUDE FIX: guard against copying an empty string and firing a false success toast
+    if (!text) {
+      toast.error(`${label} not available — try regenerating first.`);
+      return;
+    }
     try {
       await navigator.clipboard.writeText(text);
       toast.success(`${label} copied to clipboard.`);
