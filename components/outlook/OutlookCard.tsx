@@ -6,16 +6,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AvoidList } from "@/components/outlook/AvoidList";
 import { CoinWatchItem } from "@/components/outlook/CoinWatchItem";
+import { MemberResponses } from "@/components/outlook/MemberResponses";
 import { OutlookChartCard } from "@/components/outlook/OutlookChartCard";
 
 export function OutlookCard({
   outlook,
+  currentUserId,
 }: {
   outlook: DailyOutlook & {
     coinsToWatch: Array<{ coin: string; note: string }>;
     levels: Array<{ coin: string; resistance: string; support: string }>;
     avoidToday: string[];
   };
+  currentUserId?: string;
 }) {
   const badgeVariant =
     outlook.marketBias === "BULLISH"
@@ -164,6 +167,10 @@ export function OutlookCard({
           </div>
         </div>
       ) : null}
+
+      {currentUserId && (
+        <MemberResponses outlookId={outlook.id} currentUserId={currentUserId} />
+      )}
     </div>
   );
 }

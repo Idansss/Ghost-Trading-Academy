@@ -135,6 +135,12 @@ export const outlookSchema = z.object({
   avoidToday: z.array(z.string().min(1, "Rule cannot be empty.")).min(1),
 });
 
+export const outlookMemberResponseSchema = z.object({
+  memberBias: z.nativeEnum(MarketBias),
+  note: z.string().max(500).optional().nullable(),
+  chartImageUrl: z.string().url().optional().or(z.literal("")).nullable(),
+});
+
 export const resourceSchema = z.object({
   title: z.string().min(2),
   description: z.string().min(10),

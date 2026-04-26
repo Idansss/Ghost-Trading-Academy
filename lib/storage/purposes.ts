@@ -8,6 +8,7 @@ export const signedUploadPurposeSchema = z.enum([
   "adminImage",
   "pdf",
   "tradeNote",
+  "outlookResponse",
 ]);
 
 export type SignedUploadPurpose = z.infer<typeof signedUploadPurposeSchema>;
@@ -43,6 +44,10 @@ export const uploadLimits: Record<
     maxBytes: 4 * MB,
     allowedMimePrefixes: ["image/"],
   },
+  outlookResponse: {
+    maxBytes: 8 * MB,
+    allowedMimePrefixes: ["image/"],
+  },
   pdf: {
     maxBytes: 16 * MB,
     allowedMimeExact: ["application/pdf"],
@@ -59,6 +64,7 @@ export function folderForPurpose(purpose: SignedUploadPurpose, userId: string): 
     adminImage: "admin",
     pdf: "resources",
     tradeNote: "trade-notes",
+    outlookResponse: "outlook-responses",
   }[purpose];
   return `${base}/${userId}`;
 }

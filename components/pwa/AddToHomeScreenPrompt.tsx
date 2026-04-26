@@ -15,6 +15,8 @@ type NavigatorWithStandalone = Navigator & {
 const DISMISSED_KEY = "ghost-a2hs-dismissed";
 const INSTALLED_KEY = "ghost-a2hs-installed";
 const SESSION_COUNT_KEY = "gta-mobile-sessions";
+const LAST_SHOWN_KEY = "ghost-a2hs-last-shown";
+const SHOW_COOLDOWN_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 export function AddToHomeScreenPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
@@ -43,10 +45,17 @@ export function AddToHomeScreenPrompt() {
       return;
     }
 
+    const lastShown = Number(window.localStorage.getItem(LAST_SHOWN_KEY) ?? "0");
+    if (lastShown && Date.now() - lastShown < SHOW_COOLDOWN_MS) {
+      setShowPrompt(false);
+      return;
+    }
+
     const sessions = Number(window.localStorage.getItem(SESSION_COUNT_KEY) ?? "0") + 1;
     window.localStorage.setItem(SESSION_COUNT_KEY, String(sessions));
 
     if (iosDevice && sessions >= 3) {
+      window.localStorage.setItem(LAST_SHOWN_KEY, String(Date.now()));
       setShowPrompt(true);
     }
 
@@ -61,6 +70,7 @@ export function AddToHomeScreenPrompt() {
       event.preventDefault();
       setDeferredPrompt(event as BeforeInstallPromptEvent);
       if (sessions >= 3) {
+        window.localStorage.setItem(LAST_SHOWN_KEY, String(Date.now()));
         setShowPrompt(true);
       }
     };

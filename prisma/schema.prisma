@@ -170,6 +170,7 @@ model User {
   channelMembers      ChannelMember[]
   messageReactions    MessageReaction[]
   sentDMs             ChatChannel[]        @relation("DMCreator")
+  outlookResponses    OutlookMemberResponse[]
 }
 
 model ChatChannel {
@@ -455,11 +456,30 @@ model DailyOutlook {
   createdBy       String
   createdAt       DateTime   @default(now())
   author          User       @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  memberResponses OutlookMemberResponse[]
 
   // AUDIT FIX: FK field createdBy had no index, causing full table scans when
   // filtering outlooks by author (e.g. admin edit views).
   @@index([createdBy])
   @@index([date])
+}
+
+model OutlookMemberResponse {
+  id            String     @id @default(cuid())
+  outlookId     String
+  userId        String
+  memberBias    MarketBias
+  note          String?
+  chartImageUrl String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  outlook       DailyOutlook @relation(fields: [outlookId], references: [id], onDelete: Cascade)
+  member        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([outlookId, userId])
+  @@index([outlookId])
+  @@index([userId])
 }
 
 model Resource {

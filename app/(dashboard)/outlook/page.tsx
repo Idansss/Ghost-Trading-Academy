@@ -66,6 +66,7 @@ export default function OutlookPage() {
             }>,
             avoidToday: data.outlook.avoidToday as string[],
           }}
+          currentUserId={session?.user.id}
         />
       ) : (
         <EmptyState
