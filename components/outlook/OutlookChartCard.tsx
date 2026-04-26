@@ -1,19 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ExternalLink } from "lucide-react";
-import { TradingViewChart } from "@/components/charts/TradingViewChart";
+import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChartSkeleton } from "@/components/charts/ChartSkeleton";
 import {
   CHART_INTERVAL_OPTIONS,
   normalizeChartSymbol,
-  parseChartPrice,
   type ChartInterval,
 } from "@/lib/chart-utils";
-// CLAUDE IMPROVEMENT: Phase 3 — "Open in TradingView" link on each outlook chart card.
-import { buildTradingViewUrl } from "@/lib/charts/tradingViewUrl";
+
+const TradingViewAdvancedWidget = dynamic(
+  () =>
+    import("@/components/charts/TradingViewAdvancedWidget").then(
+      (m) => m.TradingViewAdvancedWidget,
+    ),
+  { ssr: false, loading: () => <ChartSkeleton height={400} /> },
+);
 
 export function OutlookChartCard({
   coin,
@@ -28,23 +33,6 @@ export function OutlookChartCard({
 }) {
   const [interval, setInterval] = useState<ChartInterval>("4h");
 
-  const levels = useMemo(
-    () =>
-      [
-        {
-          price: parseChartPrice(resistance),
-          label: "Resistance",
-          color: "#8b2020",
-        },
-        {
-          price: parseChartPrice(support),
-          label: "Support",
-          color: "#2d6a0f",
-        },
-      ].filter((level): level is { price: number; label: string; color: string } => level.price !== null),
-    [resistance, support],
-  );
-
   return (
     <Card>
       <CardHeader className="space-y-4">
@@ -53,17 +41,6 @@ export function OutlookChartCard({
             <div className="flex items-center gap-2 flex-wrap">
               <CardTitle>{coin}</CardTitle>
               <Badge variant="info">{normalizeChartSymbol(coin)}</Badge>
-              {/* CLAUDE IMPROVEMENT: Phase 3 — direct link to TradingView chart */}
-              <a
-                href={buildTradingViewUrl({ symbol: normalizeChartSymbol(coin), interval })}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
-                aria-label={`Open ${coin} in TradingView`}
-              >
-                <ExternalLink className="h-3 w-3" />
-                TradingView
-              </a>
             </div>
             <p className="text-sm text-muted-foreground">{note}</p>
           </div>
@@ -79,11 +56,11 @@ export function OutlookChartCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <TradingViewChart
+        <TradingViewAdvancedWidget
           symbol={normalizeChartSymbol(coin)}
           interval={interval}
-          height={340}
-          levels={levels}
+          height={400}
+          allowSymbolChange={false}
         />
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-2xl border border-border p-4">

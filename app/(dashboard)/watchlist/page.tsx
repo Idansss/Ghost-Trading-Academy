@@ -11,11 +11,12 @@ import { ChartSkeleton } from "@/components/charts/ChartSkeleton";
 import { fetchJson } from "@/lib/client-api";
 import { normalizeChartSymbol } from "@/lib/chart-utils";
 
-// CLAUDE IMPROVEMENT: Dynamic import prevents the heavyweight chart lib from bloating
-// the initial bundle — it only loads when the user expands a chart.
-const TradingViewChart = dynamic(
-  () => import("@/components/charts/TradingViewChart").then((m) => m.TradingViewChart),
-  { ssr: false, loading: () => <ChartSkeleton height={280} /> },
+const TradingViewAdvancedWidget = dynamic(
+  () =>
+    import("@/components/charts/TradingViewAdvancedWidget").then(
+      (m) => m.TradingViewAdvancedWidget,
+    ),
+  { ssr: false, loading: () => <ChartSkeleton height={500} /> },
 );
 
 type WatchlistItem = {
@@ -199,10 +200,11 @@ export default function WatchlistPage() {
                 {/* CLAUDE IMPROVEMENT: Inline expandable chart — single symbol at a time */}
                 {isExpanded ? (
                   <div className="mt-4">
-                    <TradingViewChart
+                    <TradingViewAdvancedWidget
                       symbol={normalizeChartSymbol(item.symbol)}
                       interval="4h"
-                      height={280}
+                      height={500}
+                      allowSymbolChange={false}
                     />
                   </div>
                 ) : null}
