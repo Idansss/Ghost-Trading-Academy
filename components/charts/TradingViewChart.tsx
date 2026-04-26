@@ -308,39 +308,33 @@ export function TradingViewChart({
     }
   }, [levels]);
 
-  if (isLoading) {
-    return <Skeleton className={cn("w-full rounded-3xl", className)} style={{ height }} />;
-  }
-
-  if (isError) {
-    return (
-      <div
-        className={cn(
-          "flex h-full min-h-[220px] flex-col items-center justify-center gap-3 rounded-3xl border border-border bg-muted/20 px-6 text-center",
-          className,
-        )}
-        style={{ height }}
-      >
-        <p className="text-sm font-medium text-foreground">Chart data unavailable</p>
-        <p className="max-w-sm text-sm text-muted-foreground">
-          Binance did not return OHLC data for {symbol} on the {interval.toUpperCase()} timeframe.
-        </p>
-        <Button type="button" variant="outline" onClick={() => void refetch()}>
-          <RefreshCcw className="mr-2 h-4 w-4" />
-          Retry
-        </Button>
-      </div>
-    );
-  }
-
+  // CLAUDE FIX: Always render the container div so containerRef is populated on mount.
+  // Previously, early-returning <Skeleton> meant containerRef.current was null when the
+  // chart init useEffect ran. The effect exited early and never re-ran (deps didn't change
+  // when data loaded), so the chart was never created. Now we overlay loading/error states
+  // on top of the always-present container instead of replacing it.
   return (
-    <div className={cn("relative", className)}>
-      {isFetching ? (
+    <div className={cn("relative", className)} style={{ height }}>
+      <div ref={containerRef} className="w-full h-full overflow-hidden rounded-3xl" />
+
+      {isLoading ? (
+        <Skeleton className="absolute inset-0 rounded-3xl" />
+      ) : isError ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-3xl border border-border bg-muted/20 px-6 text-center">
+          <p className="text-sm font-medium text-foreground">Chart data unavailable</p>
+          <p className="max-w-sm text-sm text-muted-foreground">
+            Price data could not be loaded for {symbol} on the {interval.toUpperCase()} timeframe.
+          </p>
+          <Button type="button" variant="outline" onClick={() => void refetch()}>
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            Retry
+          </Button>
+        </div>
+      ) : isFetching ? (
         <div className="pointer-events-none absolute right-3 top-3 z-10 rounded-full bg-background/90 px-3 py-1 text-xs text-muted-foreground shadow-sm">
           Refreshing…
         </div>
       ) : null}
-      <div ref={containerRef} className="w-full overflow-hidden rounded-3xl" style={{ height }} />
     </div>
   );
 }
