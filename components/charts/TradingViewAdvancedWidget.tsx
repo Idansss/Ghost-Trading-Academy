@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, memo } from "react"
 import { useTheme } from "next-themes"
-import { ChartSkeleton } from "@/components/charts/ChartSkeleton"
+
+// CLAUDE FIX 1: removed unused ChartSkeleton import — ESLint @typescript-eslint/no-unused-vars
 
 interface TradingViewAdvancedWidgetProps {
   symbol: string
@@ -30,7 +31,7 @@ function TradingViewAdvancedWidgetBase({
   const isDark = (resolvedTheme ?? theme) === "dark"
 
   const tvInterval = (() => {
-    if (interval === "15m") return "15"
+    if (interval === "15m" || interval === "15") return "15"
     if (interval === "1h" || interval === "60") return "60"
     if (interval === "4h" || interval === "240") return "240"
     if (interval === "1d" || interval === "D") return "D"
@@ -40,13 +41,19 @@ function TradingViewAdvancedWidgetBase({
 
   const cleanSymbol = symbol.toUpperCase().replace(/[^A-Z0-9:]/g, "")
   const fullSymbol = cleanSymbol.includes(":") ? cleanSymbol : `BINANCE:${cleanSymbol}`
+  const widgetId = containerId ?? `tv_adv_${cleanSymbol.replace(/[^a-zA-Z0-9]/g, "_")}_${tvInterval}`
 
-  const widgetId = containerId ?? `tv_adv_${symbol.replace(/[^a-zA-Z0-9]/g, "")}_${interval}`
+  // CLAUDE FIX 3: stringify studies so the effect only re-runs when contents
+  // change, not when the parent re-renders with a new array reference
+  const studiesKey = JSON.stringify(studies)
 
   useEffect(() => {
-    if (!containerRef.current) return
+    // CLAUDE FIX 2: capture ref value at effect start so the cleanup closure
+    // holds a stable reference and doesn't clear the wrong node after remount
+    const container = containerRef.current
+    if (!container) return
 
-    containerRef.current.innerHTML = ""
+    container.innerHTML = ""
 
     const script = document.createElement("script")
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js"
@@ -63,7 +70,7 @@ function TradingViewAdvancedWidgetBase({
       hide_top_toolbar: hideTopToolbar,
       hide_side_toolbar: hideSideToolbar,
       allow_symbol_change: allowSymbolChange,
-      studies,
+      studies: JSON.parse(studiesKey),
       container_id: widgetId,
       autosize: true,
       backgroundColor: isDark ? "rgba(10, 10, 10, 1)" : "rgba(255, 255, 255, 1)",
@@ -75,14 +82,14 @@ function TradingViewAdvancedWidgetBase({
       calendar: false,
     })
 
-    containerRef.current.appendChild(script)
+    container.appendChild(script)
 
     return () => {
-      if (containerRef.current) {
-        containerRef.current.innerHTML = ""
+      if (container) {
+        container.innerHTML = ""
       }
     }
-  }, [fullSymbol, tvInterval, isDark, hideTopToolbar, hideSideToolbar, allowSymbolChange, widgetId])
+  }, [fullSymbol, tvInterval, isDark, hideTopToolbar, hideSideToolbar, allowSymbolChange, widgetId, studiesKey])
 
   return (
     <div
