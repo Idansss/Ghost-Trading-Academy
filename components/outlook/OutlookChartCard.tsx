@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { TradingViewChart } from "@/components/charts/TradingViewChart";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,8 @@ import {
   parseChartPrice,
   type ChartInterval,
 } from "@/lib/chart-utils";
+// CLAUDE IMPROVEMENT: Phase 3 — "Open in TradingView" link on each outlook chart card.
+import { buildTradingViewUrl } from "@/lib/charts/tradingViewUrl";
 
 export function OutlookChartCard({
   coin,
@@ -47,9 +50,20 @@ export function OutlookChartCard({
       <CardHeader className="space-y-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <CardTitle>{coin}</CardTitle>
               <Badge variant="info">{normalizeChartSymbol(coin)}</Badge>
+              {/* CLAUDE IMPROVEMENT: Phase 3 — direct link to TradingView chart */}
+              <a
+                href={buildTradingViewUrl({ symbol: normalizeChartSymbol(coin), interval })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                aria-label={`Open ${coin} in TradingView`}
+              >
+                <ExternalLink className="h-3 w-3" />
+                TradingView
+              </a>
             </div>
             <p className="text-sm text-muted-foreground">{note}</p>
           </div>

@@ -2,10 +2,21 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { ChartSkeleton } from "@/components/charts/ChartSkeleton";
 import { fetchJson } from "@/lib/client-api";
+import { normalizeChartSymbol } from "@/lib/chart-utils";
+
+// CLAUDE IMPROVEMENT: Dynamic import prevents the heavyweight chart lib from bloating
+// the initial bundle — it only loads when the user expands a chart.
+const TradingViewChart = dynamic(
+  () => import("@/components/charts/TradingViewChart").then((m) => m.TradingViewChart),
+  { ssr: false, loading: () => <ChartSkeleton height={280} /> },
+);
 
 type WatchlistItem = {
   id: string;
@@ -17,6 +28,9 @@ type WatchlistItem = {
 export default function WatchlistPage() {
   const queryClient = useQueryClient();
   const [symbol, setSymbol] = useState("BTCUSDT");
+  // CLAUDE IMPROVEMENT: Only one chart open at a time — better for performance
+  // on long watchlists since each open chart fetches and renders candle data.
+  const [expandedSymbol, setExpandedSymbol] = useState<string | null>(null);
 
   const watchlistQuery = useQuery({
     queryKey: ["watchlist"],
@@ -38,25 +52,25 @@ export default function WatchlistPage() {
     enabled: watchlistSymbols.length > 0,
     queryFn: async () => {
       const results = await Promise.all(
-        watchlistSymbols.map(async (symbol) => {
+        watchlistSymbols.map(async (sym) => {
           const binance = await fetch(
-            `https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(symbol)}`,
+            `https://api.binance.com/api/v3/ticker/24hr?symbol=${encodeURIComponent(sym)}`,
           ).catch(() => null);
           if (binance?.ok) {
             const payload = (await binance.json()) as { lastPrice?: string; priceChangePercent?: string };
             if (typeof payload.lastPrice === "string") {
-              return { symbol, lastPrice: payload.lastPrice, priceChangePercent: String(payload.priceChangePercent ?? "0") };
+              return { symbol: sym, lastPrice: payload.lastPrice, priceChangePercent: String(payload.priceChangePercent ?? "0") };
             }
           }
           const bybit = await fetch(
-            `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${encodeURIComponent(symbol)}`,
+            `https://api.bybit.com/v5/market/tickers?category=spot&symbol=${encodeURIComponent(sym)}`,
           ).catch(() => null);
           if (bybit?.ok) {
             const body = (await bybit.json()) as { result?: { list?: Array<{ lastPrice?: string; price24hPcnt?: string }> } };
             const row = body.result?.list?.[0];
             if (row?.lastPrice) {
               const pct = Number(row.price24hPcnt ?? 0);
-              return { symbol, lastPrice: row.lastPrice, priceChangePercent: (pct * 100).toFixed(4) };
+              return { symbol: sym, lastPrice: row.lastPrice, priceChangePercent: (pct * 100).toFixed(4) };
             }
           }
           return null;
@@ -92,6 +106,10 @@ export default function WatchlistPage() {
     },
   });
 
+  function toggleChart(sym: string) {
+    setExpandedSymbol((prev) => (prev === sym ? null : sym));
+  }
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold">Watchlist</h1>
@@ -104,6 +122,11 @@ export default function WatchlistPage() {
             placeholder="BTCUSDT"
             value={symbol}
             onChange={(event) => setSymbol(event.target.value.toUpperCase())}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && symbol && !addMutation.isPending) {
+                addMutation.mutate();
+              }
+            }}
           />
           <Button onClick={() => addMutation.mutate()} disabled={addMutation.isPending || !symbol}>
             Add
@@ -114,19 +137,75 @@ export default function WatchlistPage() {
       <div className="grid gap-3">
         {(watchlistQuery.data?.items ?? []).map((item) => {
           const ticker = tickerMap.get(item.symbol);
+          const pctChange = ticker ? Number(ticker.priceChangePercent) : null;
+          const isExpanded = expandedSymbol === item.symbol;
+
           return (
-            <Card key={item.id}>
-              <CardContent className="flex items-center justify-between py-4">
-                <div>
-                  <p className="font-semibold">{item.symbol}</p>
-                  <p className="text-sm text-muted-foreground">
-                    Price: {ticker ? Number(ticker.lastPrice).toFixed(4) : "—"} | 24h:{" "}
-                    {ticker ? `${Number(ticker.priceChangePercent).toFixed(2)}%` : "—"}
-                  </p>
+            <Card key={item.id} className="overflow-hidden">
+              <CardContent className="py-4">
+                {/* CLAUDE IMPROVEMENT: Header row — symbol, price, 24h change, actions */}
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold truncate">{item.symbol}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      <p className="text-sm text-muted-foreground">
+                        {ticker ? Number(ticker.lastPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 6 }) : "—"}
+                      </p>
+                      {pctChange !== null ? (
+                        <span
+                          className={`text-xs font-medium ${
+                            pctChange >= 0 ? "text-[color:var(--color-green)]" : "text-[color:var(--color-red)]"
+                          }`}
+                        >
+                          {pctChange >= 0 ? "+" : ""}
+                          {pctChange.toFixed(2)}%
+                        </span>
+                      ) : null}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 text-xs"
+                      onClick={() => toggleChart(item.symbol)}
+                      aria-expanded={isExpanded}
+                      aria-label={isExpanded ? "Collapse chart" : "View chart"}
+                    >
+                      {isExpanded ? (
+                        <>
+                          <ChevronUp className="h-3.5 w-3.5" />
+                          Hide chart
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="h-3.5 w-3.5" />
+                          View chart
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-xs"
+                      onClick={() => removeMutation.mutate(item.symbol)}
+                      disabled={removeMutation.isPending}
+                    >
+                      Remove
+                    </Button>
+                  </div>
                 </div>
-                <Button variant="outline" onClick={() => removeMutation.mutate(item.symbol)}>
-                  Remove
-                </Button>
+
+                {/* CLAUDE IMPROVEMENT: Inline expandable chart — single symbol at a time */}
+                {isExpanded ? (
+                  <div className="mt-4">
+                    <TradingViewChart
+                      symbol={normalizeChartSymbol(item.symbol)}
+                      interval="4h"
+                      height={280}
+                    />
+                  </div>
+                ) : null}
               </CardContent>
             </Card>
           );

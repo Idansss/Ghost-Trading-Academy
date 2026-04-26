@@ -60,6 +60,8 @@ export const adminSubNav: NavigationItem[] = [
   { href: "/admin/wins", label: "Win Moderation", icon: Users },
   { href: "/admin/engagement", label: "Engagement", icon: BarChart3 },
   { href: "/admin/tags", label: "Trade Tags", icon: Tags },
+  // CLAUDE FIX: links admins to the TradingView webhook integration config page
+  { href: "/admin/integrations/tradingview", label: "TradingView", icon: LineChart },
   { href: "/admin/site-config", label: "Site Config", icon: Settings2 },
   { href: "/admin/audit-log", label: "Audit Log", icon: Shield },
   { href: "/admin/reports", label: "Reports", icon: Send },

@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import { MobileSearch } from "@/components/layout/MobileSearch";
 import type { GlobalSearchItem } from "@/components/layout/GlobalSearch";
 import { NotificationBell } from "@/components/layout/NotificationBell";
-import { adminNav, isPathActive, primaryNav } from "@/components/layout/navigation";
+import { adminNav, adminSubNav, isPathActive, primaryNav } from "@/components/layout/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,13 @@ export function MobileHeader({
     .slice(0, 2)
     .map((value) => value[0])
     .join("");
-  const navItems = user.role === "ADMIN" ? [...primaryNav, adminNav] : primaryNav;
+  const isAdminArea = pathname.startsWith("/admin");
+  const navItems =
+    user.role === "ADMIN" && isAdminArea
+      ? adminSubNav
+      : user.role === "ADMIN"
+        ? [...primaryNav, adminNav]
+        : primaryNav;
 
   return (
     <header className="flex h-16 items-center justify-between gap-3 border-b border-border bg-background/95 px-4 backdrop-blur md:hidden">

@@ -9,7 +9,7 @@ import type { Session } from "next-auth";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { adminNav, isPathActive, primaryNav } from "@/components/layout/navigation";
+import { adminNav, adminSubNav, isPathActive, primaryNav } from "@/components/layout/navigation";
 import { Logo } from "@/components/shared/Logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ export function Sidebar({ user }: { user: Session["user"] }) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const AdminIcon = adminNav.icon;
+  const isAdminArea = pathname.startsWith("/admin");
 
   return (
     <aside
@@ -44,8 +45,8 @@ export function Sidebar({ user }: { user: Session["user"] }) {
         </Button>
       </div>
 
-      <nav className="mt-6 flex-1 space-y-1.5">
-        {primaryNav.map((item) => {
+      <nav className="mt-6 flex-1 space-y-1.5 overflow-y-auto">
+        {(isAdminArea && user.role === "ADMIN" ? adminSubNav : primaryNav).map((item) => {
           const active = isPathActive(pathname, item.href, item.match);
           const Icon = item.icon;
 
@@ -71,7 +72,7 @@ export function Sidebar({ user }: { user: Session["user"] }) {
           );
         })}
 
-        {user.role === "ADMIN" ? (
+        {user.role === "ADMIN" && !isAdminArea ? (
           <Link
             href={adminNav.href}
             className={cn(

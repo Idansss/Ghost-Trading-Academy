@@ -249,37 +249,60 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
         {orderedItems.map((item) => {
           const positive = item.changePercent >= 0;
 
+          const changeBlock = (
+            <div
+              className={cn(
+                "flex shrink-0 items-center gap-0.5 text-xs font-semibold tabular-nums md:gap-1",
+                positive
+                  ? "text-[color:var(--color-green)]"
+                  : "text-[color:var(--color-red)]",
+              )}
+              data-number="true"
+            >
+              {positive ? (
+                <ArrowUpRight className="h-3.5 w-3.5 flex-shrink-0" />
+              ) : (
+                <ArrowDownRight className="h-3.5 w-3.5 flex-shrink-0" />
+              )}
+              {item.changePercent.toFixed(2)}%
+            </div>
+          );
+
           return (
             <div
               key={item.symbol}
-              className="flex min-w-[108px] flex-1 items-center justify-between gap-1.5 rounded-xl border border-border bg-card px-2.5 py-1.5 sm:min-w-[112px]"
+              className="min-w-[148px] flex-1 rounded-xl border border-border bg-card px-2.5 py-1.5 sm:min-w-[155px] md:min-w-[112px]"
             >
-              <div className="min-w-0">
-                <p
-                  className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
-                  title={item.label}
-                >
-                  {item.label}
-                </p>
-                <p className="mt-0.5 text-sm font-semibold tabular-nums" data-number="true">
+              {/* Mobile: full pair label on one line with % — price on its own row (no vertical squeeze) */}
+              <div className="flex flex-col gap-0.5 md:hidden">
+                <div className="flex items-baseline justify-between gap-2">
+                  <p
+                    className="min-w-0 break-words text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground"
+                    title={item.label}
+                  >
+                    {item.label}
+                  </p>
+                  {changeBlock}
+                </div>
+                <p className="text-sm font-semibold tabular-nums" data-number="true">
                   {item.price ? `$${formatPrice(item.price)}` : "--"}
                 </p>
               </div>
-              <div
-                className={cn(
-                  "flex shrink-0 items-center gap-1 text-xs font-semibold tabular-nums",
-                  positive
-                    ? "text-[color:var(--color-green)]"
-                    : "text-[color:var(--color-red)]",
-                )}
-                data-number="true"
-              >
-                {positive ? (
-                  <ArrowUpRight className="h-3.5 w-3.5 flex-shrink-0" />
-                ) : (
-                  <ArrowDownRight className="h-3.5 w-3.5 flex-shrink-0" />
-                )}
-                {item.changePercent.toFixed(2)}%
+
+              {/* Desktop: unchanged — label + price column, % on the side */}
+              <div className="hidden min-w-0 items-center justify-between gap-1.5 md:flex">
+                <div className="min-w-0">
+                  <p
+                    className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                    title={item.label}
+                  >
+                    {item.label}
+                  </p>
+                  <p className="mt-0.5 text-sm font-semibold tabular-nums" data-number="true">
+                    {item.price ? `$${formatPrice(item.price)}` : "--"}
+                  </p>
+                </div>
+                {changeBlock}
               </div>
             </div>
           );

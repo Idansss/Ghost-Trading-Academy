@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+// CLAUDE IMPROVEMENT: Phase 3 — TradingView and copy-levels actions on each card.
+import { SignalActions } from "@/components/signals/SignalActions";
 import { fetchJson } from "@/lib/client-api";
 import { cn } from "@/lib/utils";
 import { getSignalStatusVariant } from "@/lib/signal-performance";
@@ -136,9 +138,21 @@ export function SignalCard({ signal }: { signal: SignalWithTaken }) {
           </div>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <Badge variant="warning">{signal.riskLevel} Risk</Badge>
-          <Badge variant="info">{signal.timeframe}</Badge>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex gap-2">
+            <Badge variant="warning">{signal.riskLevel} Risk</Badge>
+            <Badge variant="info">{signal.timeframe}</Badge>
+          </div>
+          {/* CLAUDE IMPROVEMENT: Phase 3 — quick access to TradingView and level clipboard */}
+          <SignalActions
+            coin={signal.coin}
+            timeframe={signal.timeframe}
+            entryZone={signal.entryZone}
+            stopLoss={signal.stopLoss}
+            tp1={signal.tp1}
+            tp2={signal.tp2}
+            tp3={signal.tp3}
+          />
         </div>
       </CardContent>
     </Card>

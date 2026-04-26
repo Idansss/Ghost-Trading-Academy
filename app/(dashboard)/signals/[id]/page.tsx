@@ -5,6 +5,8 @@ import { notFound } from "next/navigation";
 import { SignalChartPanel } from "@/components/charts/SignalChartPanel";
 import { SignalPositionSizingSheet } from "@/components/signals/SignalPositionSizingSheet";
 import { SignalViewedTracker } from "@/components/signals/SignalViewedTracker";
+// CLAUDE IMPROVEMENT: Phase 3 — inline TradingView and copy-levels actions.
+import { SignalActions } from "@/components/signals/SignalActions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -163,6 +165,17 @@ export default async function SignalDetailPage({
           ) : null}
         </CardContent>
       </Card>
+
+      {/* CLAUDE IMPROVEMENT: Phase 3 — open in TradingView + copy levels */}
+      <SignalActions
+        coin={signal.coin}
+        timeframe={signal.timeframe}
+        entryZone={signal.entryZone}
+        stopLoss={signal.stopLoss}
+        tp1={signal.tp1}
+        tp2={signal.tp2}
+        tp3={signal.tp3}
+      />
 
       <SignalChartPanel
         coin={signal.coin}

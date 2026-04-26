@@ -25,6 +25,9 @@ function supabaseImageHost() {
 const supabaseHost = supabaseImageHost();
 
 const nextConfig = {
+  // CLAUDE IMPROVEMENT: Ensure lightweight-charts ESM package is transpiled correctly
+  // by the Next.js bundler so it works in both SSR and client contexts.
+  transpilePackages: ["lightweight-charts"],
   images: {
     remotePatterns: [
       {
