@@ -70,13 +70,15 @@ export const PATCH = createRouteHandler(async ({ request }) => {
     }
   }
 
+  // CLAUDE FIX: riskPerTrade is now optional in the schema (onboarding mode omits it).
+  // Only write it when the client sends a value so we never clobber an existing setting.
   const updated = await prisma.user.update({
     where: { id: user.id },
     data: {
       name: data.name,
       avatarUrl: data.avatarUrl || null,
       accountSize: data.accountSize ?? null,
-      riskPerTrade: data.riskPerTrade,
+      ...(data.riskPerTrade !== undefined && { riskPerTrade: data.riskPerTrade }),
       leaderboardOptIn: data.leaderboardOptIn,
       emailSignalAlerts: data.emailSignalAlerts,
       ...(data.newPassword ? { password: await bcrypt.hash(data.newPassword, 12) } : {}),

@@ -14,6 +14,11 @@ export default async function OnboardingPage() {
       id: true,
       name: true,
       avatarUrl: true,
+      // CLAUDE FIX: Added so ProfileForm in onboarding mode submits the user's
+      // existing values for hidden fields rather than clobbering them with defaults.
+      accountSize: true,
+      riskPerTrade: true,
+      leaderboardOptIn: true,
       emailSignalAlerts: true,
       onboardingCompleted: true,
       onboardingProgress: true,
@@ -30,7 +35,10 @@ export default async function OnboardingPage() {
     redirect("/dashboard");
   }
 
-  const [featuredSignal, latestSignal, resources, completions] = await Promise.all([
+  // CLAUDE FIX: The Resource table is empty — all content lives in the Course/
+  // CourseModule hierarchy. Query published courses instead so the onboarding
+  // step shows real content rather than the "No featured resources" empty state.
+  const [featuredSignal, latestSignal, featuredCourses] = await Promise.all([
     prisma.signal.findFirst({
       where: {
         status: { in: ["ACTIVE", "TP1_HIT", "TP2_HIT"] },
@@ -40,21 +48,13 @@ export default async function OnboardingPage() {
     prisma.signal.findFirst({
       orderBy: { postedAt: "desc" },
     }),
-    prisma.resource.findMany({
-      orderBy: { uploadedAt: "desc" },
+    prisma.course.findMany({
+      where: { isPublished: true },
+      orderBy: { order: "asc" },
       take: 3,
-    }),
-    prisma.resourceCompletion.findMany({
-      where: { userId: user.id },
-      select: { resourceId: true },
+      select: { id: true, title: true, description: true },
     }),
   ]);
-
-  const completedSet = new Set(completions.map((completion) => completion.resourceId));
-  const featuredResources = resources.map((resource) => ({
-    ...resource,
-    completedByMe: completedSet.has(resource.id),
-  }));
   const onboarding = getOnboardingSnapshot(
     user.onboardingProgress,
     user.onboardingCompleted,
@@ -73,9 +73,12 @@ export default async function OnboardingPage() {
         initialProfile={{
           name: user.name,
           avatarUrl: user.avatarUrl,
+          accountSize: user.accountSize,
+          riskPerTrade: user.riskPerTrade,
+          leaderboardOptIn: user.leaderboardOptIn,
           emailSignalAlerts: user.emailSignalAlerts,
         }}
-        featuredResources={featuredResources}
+        featuredCourses={featuredCourses}
         featuredSignal={featuredSignal ?? latestSignal}
       />
     </div>

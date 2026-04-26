@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { OnboardingStep, Resource, Signal } from "@prisma/client";
+import type { OnboardingStep, Signal } from "@prisma/client";
 import { useMutation } from "@tanstack/react-query";
 import {
   ArrowDownRight,
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -26,7 +26,9 @@ import { CalculatorForm } from "@/components/calculator/CalculatorForm";
 import { ResultCards } from "@/components/calculator/ResultCards";
 import { VerdictCard } from "@/components/calculator/VerdictCard";
 import { useCalculator } from "@/hooks/useCalculator";
-import { AvatarUploadButton } from "@/components/profile/AvatarUploadButton";
+// CLAUDE FIX: Import the shared ProfileForm so onboarding uses the same save
+// path as the main profile page — one source of truth.
+import { ProfileForm } from "@/components/profile/ProfileForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,14 +61,11 @@ type OnboardingSnapshot = {
   }>;
 };
 
-type ResourceWithCompletion = Resource & { completedByMe?: boolean };
+// CLAUDE FIX: Content lives in Courses, not standalone Resource records.
+type FeaturedCourse = { id: string; title: string; description: string };
 
-const profileStepSchema = z.object({
-  name: z.string().min(2, "Display name is required."),
-  avatarUrl: z.string().url().optional().or(z.literal("")).nullable(),
-});
-
-type ProfileStepValues = z.infer<typeof profileStepSchema>;
+// CLAUDE FIX: Removed local profileStepSchema — ProfileForm uses the canonical
+// profileSchema from lib/validators.ts which is the same schema the API validates.
 type TradeStepValues = z.infer<typeof onboardingTradeSchema>;
 
 const stepIcons: Record<OnboardingStep, React.ReactNode> = {
@@ -96,16 +95,22 @@ function derivePnlPercent(outcome: TradeStepValues["outcome"]) {
 export function OnboardingFlow({
   initialOnboarding,
   initialProfile,
-  featuredResources,
+  featuredCourses,
   featuredSignal,
 }: {
   initialOnboarding: OnboardingSnapshot;
+  // CLAUDE FIX: Extended to include all profile fields so ProfileForm can submit
+  // the user's existing values for hidden fields (riskPerTrade, leaderboardOptIn).
   initialProfile: {
     name: string;
     avatarUrl: string | null;
+    accountSize: number | null;
+    riskPerTrade: number;
+    leaderboardOptIn: boolean;
     emailSignalAlerts: boolean;
   };
-  featuredResources: ResourceWithCompletion[];
+  // CLAUDE FIX: was featuredResources (Resource table) which was always empty.
+  featuredCourses: FeaturedCourse[];
   featuredSignal: Signal | null;
 }) {
   const router = useRouter();
@@ -115,21 +120,12 @@ export function OnboardingFlow({
     const nextIncompleteIndex = initialOnboarding.steps.findIndex((step) => !step.done);
     return nextIncompleteIndex >= 0 ? nextIncompleteIndex : 0;
   });
-  const [resourceState, setResourceState] = useState(featuredResources);
   const { state: calculatorState, setState: setCalculatorState, results } = useCalculator({
     balance: 10000,
     riskPercent: 1,
     entry: 0,
     stopLoss: 0,
     takeProfit: 0,
-  });
-
-  const profileForm = useForm<ProfileStepValues>({
-    resolver: zodResolver(profileStepSchema),
-    defaultValues: {
-      name: initialProfile.name,
-      avatarUrl: initialProfile.avatarUrl ?? "",
-    },
   });
 
   const tradeForm = useForm<TradeStepValues>({
@@ -155,32 +151,6 @@ export function OnboardingFlow({
       if (nextIncompleteIndex >= 0) {
         setActiveStep(nextIncompleteIndex);
       }
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
-
-  const profileMutation = useMutation({
-    mutationFn: (values: ProfileStepValues) =>
-      fetchJson("/api/profile", {
-        method: "PATCH",
-        body: JSON.stringify({
-          name: values.name,
-          avatarUrl: values.avatarUrl,
-          emailSignalAlerts: initialProfile.emailSignalAlerts,
-          currentPassword: "",
-          newPassword: "",
-        }),
-      }),
-    onSuccess: async (_data, values) => {
-      await completeStepMutation.mutateAsync("PROFILE_SETUP");
-      await update({
-        user: {
-          name: values.name,
-          avatarUrl: values.avatarUrl || null,
-        },
-      });
-      router.refresh();
-      toast.success("Profile step completed.");
     },
     onError: (error: Error) => toast.error(error.message),
   });
@@ -211,33 +181,6 @@ export function OnboardingFlow({
     onError: (error: Error) => toast.error(error.message),
   });
 
-  const resourceMutation = useMutation({
-    mutationFn: async (resource: ResourceWithCompletion) => {
-      const response = await fetchJson<{ completed: boolean }>(
-        `/api/education/${resource.id}/complete`,
-        {
-          method: "POST",
-        },
-      );
-
-      return { resourceId: resource.id, completed: response.completed };
-    },
-    onSuccess: async ({ resourceId, completed }) => {
-      setResourceState((current) =>
-        current.map((resource) =>
-          resource.id === resourceId ? { ...resource, completedByMe: completed } : resource,
-        ),
-      );
-
-      if (completed) {
-        await completeStepMutation.mutateAsync("FIRST_RESOURCE_COMPLETED");
-        toast.success("Resource step completed.");
-      } else {
-        toast.info("Resource marked as incomplete.");
-      }
-    },
-    onError: (error: Error) => toast.error(error.message),
-  });
 
   useEffect(() => {
     if (onboarding.completed) {
@@ -245,17 +188,6 @@ export function OnboardingFlow({
     }
   }, [onboarding.completed, onboarding.steps.length]);
 
-  const watchedName = profileForm.watch("name");
-  const initials = useMemo(
-    () =>
-      (watchedName || initialProfile.name)
-        .split(" ")
-        .slice(0, 2)
-        .map((part) => part[0])
-        .join("")
-        .toUpperCase() || "GV",
-    [initialProfile.name, watchedName],
-  );
   const activeStepItem = onboarding.steps[activeStep] ?? onboarding.steps[0];
   const calculatorValid =
     Number(calculatorState.entry) > 0 &&
@@ -344,56 +276,28 @@ export function OnboardingFlow({
         </CardHeader>
         <CardContent className="space-y-6 p-6 md:p-8">
           {activeStepItem?.key === "PROFILE_SETUP" ? (
-            <form
-              className="space-y-6"
-              onSubmit={profileForm.handleSubmit(async (values) => {
-                await profileMutation.mutateAsync(values);
-              })}
-            >
-              <div className="flex items-center gap-4 rounded-3xl border border-border p-5">
-                <AvatarUploadButton
-                  name={profileForm.watch("name")}
-                  initials={initials}
-                  imageUrl={profileForm.watch("avatarUrl") || ""}
-                  onUpload={(url) => {
-                    profileForm.setValue("avatarUrl", url, {
-                      shouldDirty: true,
-                      shouldTouch: true,
-                      shouldValidate: true,
-                    });
-                  }}
-                />
-                <div className="space-y-1">
-                  <p className="font-medium text-foreground">Profile preview</p>
-                  <p className="text-sm text-muted-foreground">
-                    This is the identity shown around the desk and community.
-                  </p>
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Display name</Label>
-                  <Input {...profileForm.register("name")} placeholder="Abass Ibrahim" />
-                  {profileForm.formState.errors.name ? (
-                    <p className="text-xs text-[color:var(--color-red)]">
-                      {profileForm.formState.errors.name.message}
-                    </p>
-                  ) : null}
-                </div>
-                <div className="space-y-2">
-                  <Label>Avatar URL</Label>
-                  <Input
-                    {...profileForm.register("avatarUrl")}
-                    placeholder="Optional image URL"
-                  />
-                </div>
-              </div>
-
-              <Button disabled={profileMutation.isPending || completeStepMutation.isPending}>
-                {profileMutation.isPending ? "Saving..." : "Save and continue"}
-              </Button>
-            </form>
+            <ProfileForm
+              mode="onboarding"
+              initialValues={{
+                name: initialProfile.name,
+                avatarUrl: initialProfile.avatarUrl,
+                accountSize: initialProfile.accountSize,
+                riskPerTrade: initialProfile.riskPerTrade,
+                leaderboardOptIn: initialProfile.leaderboardOptIn,
+                emailSignalAlerts: initialProfile.emailSignalAlerts,
+              }}
+              onSuccess={async (values) => {
+                await completeStepMutation.mutateAsync("PROFILE_SETUP");
+                await update({
+                  user: {
+                    name: values.name,
+                    avatarUrl: values.avatarUrl || null,
+                  },
+                });
+                router.refresh();
+                toast.success("Profile step completed.");
+              }}
+            />
           ) : null}
 
           {activeStepItem?.key === "FIRST_TRADE_LOGGED" ? (
@@ -570,51 +474,52 @@ export function OnboardingFlow({
             </div>
           ) : null}
 
+          {/* CLAUDE FIX: was querying the empty Resource table. Now shows published
+              Courses so members see real content ("Price action" etc.) and can mark
+              the step complete after visiting education. */}
           {activeStepItem?.key === "FIRST_RESOURCE_COMPLETED" ? (
             <div className="space-y-6">
-              <div className="grid gap-4 lg:grid-cols-3">
-                {resourceState.map((resource) => (
-                  <Card key={resource.id} className="h-full">
-                    <CardContent className="flex h-full flex-col gap-4 p-5">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={resource.type === "VIDEO" ? "info" : "muted"}>
-                          {resource.type}
-                        </Badge>
-                        <Badge variant="muted">{resource.tag}</Badge>
-                      </div>
-                      <div className="space-y-2">
-                        <h3 className="text-lg font-semibold">{resource.title}</h3>
-                        <p className="text-sm text-muted-foreground">{resource.description}</p>
-                      </div>
-                      <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
-                        {resource.meta}
-                      </p>
-                      <div className="mt-auto flex flex-col gap-2">
-                        <Button asChild variant="outline">
-                          <Link href={resource.url} target="_blank">
-                            Open resource
-                          </Link>
-                        </Button>
-                        <Button
-                          disabled={resourceMutation.isPending}
-                          onClick={async () => {
-                            await resourceMutation.mutateAsync(resource);
-                          }}
-                        >
-                          {resource.completedByMe ? "Mark incomplete" : "Mark complete"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-              {!resourceState.length ? (
+              {featuredCourses.length > 0 ? (
+                <div className="grid gap-4 lg:grid-cols-3">
+                  {featuredCourses.map((course) => (
+                    <Card key={course.id} className="h-full">
+                      <CardContent className="flex h-full flex-col gap-4 p-5">
+                        <div className="space-y-2">
+                          <h3 className="text-lg font-semibold">{course.title}</h3>
+                          <p className="text-sm text-muted-foreground">{course.description}</p>
+                        </div>
+                        <div className="mt-auto flex flex-col gap-2">
+                          <Button asChild variant="outline">
+                            <Link href="/education">
+                              Open in education
+                            </Link>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
                 <Card>
-                  <CardContent className="p-6 text-sm text-muted-foreground">
-                    No featured resources are available yet.
+                  <CardContent className="space-y-4 p-6">
+                    <p className="text-sm text-muted-foreground">
+                      No courses have been published yet. Visit the education page to check for new content.
+                    </p>
+                    <Button asChild variant="outline">
+                      <Link href="/education">Go to education</Link>
+                    </Button>
                   </CardContent>
                 </Card>
-              ) : null}
+              )}
+              <Button
+                disabled={completeStepMutation.isPending || activeStepItem.done}
+                onClick={async () => {
+                  await completeStepMutation.mutateAsync("FIRST_RESOURCE_COMPLETED");
+                  toast.success("Resource step completed.");
+                }}
+              >
+                {activeStepItem.done ? "Step completed" : "Mark as complete"}
+              </Button>
             </div>
           ) : null}
 

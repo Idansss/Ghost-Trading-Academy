@@ -189,7 +189,9 @@ export const profileSchema = z.object({
   name: z.string().min(2),
   avatarUrl: z.string().url().optional().or(z.literal("")).nullable(),
   accountSize: z.coerce.number().positive().optional().nullable(),
-  riskPerTrade: z.coerce.number().positive().max(100),
+  // CLAUDE FIX: was required — onboarding form omitted this field causing "Validation failed".
+  // Made optional so partial saves (onboarding mode) don't overwrite with a bad value.
+  riskPerTrade: z.coerce.number().positive().max(100).optional(),
   leaderboardOptIn: z.boolean().default(false),
   emailSignalAlerts: z.boolean().default(true),
   currentPassword: z.string().optional(),

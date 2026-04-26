@@ -25,6 +25,8 @@
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.4",
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@hookform/resolvers": "^3.10.0",
     "@prisma/client": "^6.0.0",
     "@radix-ui/react-alert-dialog": "^1.1.4",

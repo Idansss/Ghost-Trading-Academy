@@ -1,14 +1,26 @@
 "use client";
 
-import { Paperclip, Send, X } from "lucide-react";
+import { Paperclip, Send, Smile, X } from "lucide-react";
 // CLAUDE FIX: removed next/image import — the composer preview uses a local blob: URL
 // which next/image rejects (hostname "localhost" not in remotePatterns). Use <img> instead.
+import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
 import { useChatImageUpload } from "@/hooks/useChatImageUpload";
 import type { ChatMessageWithAuthor, ChatReplyPreview } from "@/types/chat";
+
+// CLAUDE FIX: Lazy-load the emoji picker so it doesn't bloat the initial chat bundle.
+const EmojiPickerWrapper = dynamic(() => import("./EmojiPickerWrapper"), {
+  ssr: false,
+  loading: () => (
+    <div className="h-96 w-80 flex items-center justify-center text-sm text-muted-foreground">
+      Loading emojis…
+    </div>
+  ),
+});
 
 type AttachedImage = {
   localUrl: string;
@@ -18,15 +30,25 @@ type AttachedImage = {
   name: string;
 };
 
+// CLAUDE FIX: Added 3 s timeout so the handler can never hang indefinitely when
+// certain animated/WebP images fail to fire onload or onerror in some browsers.
 async function readImageDimensions(file: File): Promise<{ width: number; height: number }> {
   return new Promise((resolve, reject) => {
     const objectUrl = URL.createObjectURL(file);
     const image = new window.Image();
+
+    const timeout = window.setTimeout(() => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Image dimension read timed out."));
+    }, 3000);
+
     image.onload = () => {
+      clearTimeout(timeout);
       resolve({ width: image.width, height: image.height });
       URL.revokeObjectURL(objectUrl);
     };
     image.onerror = () => {
+      clearTimeout(timeout);
       reject(new Error("Unable to read image dimensions."));
       URL.revokeObjectURL(objectUrl);
     };
@@ -63,6 +85,11 @@ export function MessageComposer({
 }) {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // CLAUDE FIX: Track localUrl in a ref so clearImage() always revokes the
+  // correct blob URL even when called from an async closure that captures stale
+  // component state (the closure captures the image value from the render it
+  // was created in, which may be null by the time clearImage runs).
+  const localUrlRef = useRef<string | null>(null);
   const [body, setBody] = useState(editingMessage?.body ?? "");
   const [image, setImage] = useState<AttachedImage | null>(null);
   const [isCoolingDown, setIsCoolingDown] = useState(false);
@@ -94,14 +121,38 @@ export function MessageComposer({
   }, [body, onTyping]);
 
   const clearImage = (): void => {
-    if (image?.localUrl) {
-      URL.revokeObjectURL(image.localUrl);
+    // CLAUDE FIX: Revoke via ref, not stale closure state, to avoid blob URL leaks.
+    if (localUrlRef.current) {
+      URL.revokeObjectURL(localUrlRef.current);
+      localUrlRef.current = null;
     }
     setImage(null);
     reset();
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+  };
+
+  // CLAUDE FIX: cursor-position-aware emoji insertion — inserts at caret rather
+  // than always appending to the end.
+  const insertEmoji = (emoji: { native: string }): void => {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setBody((prev) => prev + emoji.native);
+      return;
+    }
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newBody = body.slice(0, start) + emoji.native + body.slice(end);
+    setBody(newBody);
+
+    // Restore cursor position after the inserted emoji.
+    window.setTimeout(() => {
+      textarea.focus();
+      const newPos = start + emoji.native.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
   };
 
   const canSend = Boolean(body.trim() || image?.remoteUrl) && !isUploading && !isCoolingDown;
@@ -224,59 +275,70 @@ export function MessageComposer({
           className="hidden"
           aria-label="Upload chat image"
           onChange={async (event) => {
-            const file = event.target.files?.[0];
-            if (!file) {
-              return;
-            }
-
-            // Do not call clearImage() here — it resets the file input and can break
-            // the picker on some browsers. Only drop the previous preview / upload state.
-            if (image?.localUrl) {
-              URL.revokeObjectURL(image.localUrl);
-            }
-            setImage(null);
-            reset();
-
-            // CLAUDE FIX: readImageDimensions was outside the try/catch, so any failure
-            // (e.g. CSP blocking blob: URLs, unsupported format) silently killed the entire
-            // handler with no preview, no upload, and no error toast. Fall back to 0×0 so
-            // the upload still proceeds and the server stores actual dimensions.
-            let dimensions = { width: 0, height: 0 };
+            // CLAUDE FIX: Outer try/catch ensures any unhandled exception inside this
+            // async handler (before setImage is reached) surfaces as a toast instead of
+            // silently dying as an unhandled Promise rejection with no user feedback.
             try {
-              dimensions = await readImageDimensions(file);
-            } catch {
-              // non-fatal — upload still proceeds with unknown dimensions
-            }
-            const localUrl = URL.createObjectURL(file);
-            setImage({
-              localUrl,
-              remoteUrl: null,
-              width: dimensions.width,
-              height: dimensions.height,
-              name: file.name,
-            });
+              const file = event.target.files?.[0];
+              if (!file) {
+                return;
+              }
 
-            try {
-              const uploadedImage = await uploadImage(file);
-              if (uploadedImage?.url) {
-                setImage((currentImage) =>
-                  currentImage
-                    ? {
-                        ...currentImage,
-                        remoteUrl: uploadedImage.url,
-                      }
-                    : currentImage,
-                );
-              } else {
+              // Do not call clearImage() here — it resets the file input and can break
+              // the picker on some browsers. Only drop the previous preview / upload state.
+              if (localUrlRef.current) {
+                URL.revokeObjectURL(localUrlRef.current);
+                localUrlRef.current = null;
+              }
+              setImage(null);
+              reset();
+
+              // CLAUDE FIX: readImageDimensions was outside the try/catch, so any failure
+              // (e.g. CSP blocking blob: URLs, unsupported format) silently killed the entire
+              // handler with no preview, no upload, and no error toast. Fall back to 0×0 so
+              // the upload still proceeds and the server stores actual dimensions.
+              let dimensions = { width: 0, height: 0 };
+              try {
+                dimensions = await readImageDimensions(file);
+              } catch {
+                // non-fatal — upload still proceeds with unknown dimensions
+              }
+
+              const localUrl = URL.createObjectURL(file);
+              localUrlRef.current = localUrl;
+              setImage({
+                localUrl,
+                remoteUrl: null,
+                width: dimensions.width,
+                height: dimensions.height,
+                name: file.name,
+              });
+
+              try {
+                const uploadedImage = await uploadImage(file);
+                if (uploadedImage?.url) {
+                  setImage((currentImage) =>
+                    currentImage
+                      ? {
+                          ...currentImage,
+                          remoteUrl: uploadedImage.url,
+                        }
+                      : currentImage,
+                  );
+                } else {
+                  clearImage();
+                  toast.error("Image upload failed. Please try again.");
+                }
+              } catch (err) {
                 clearImage();
-                toast.error("Image upload failed. Please try again.");
+                const message = err instanceof Error ? err.message : "Image upload failed.";
+                toast.error(message);
+              } finally {
+                event.target.value = "";
               }
             } catch (err) {
-              clearImage();
-              const message = err instanceof Error ? err.message : "Image upload failed.";
+              const message = err instanceof Error ? err.message : "Could not attach image.";
               toast.error(message);
-            } finally {
-              event.target.value = "";
             }
           }}
         />
@@ -291,6 +353,23 @@ export function MessageComposer({
         >
           <Paperclip className="h-4 w-4" />
         </Button>
+
+        {/* CLAUDE FIX: Emoji picker — opens as a popover above the composer. */}
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="outline"
+              aria-label="Insert emoji"
+            >
+              <Smile className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-0 border-none shadow-lg" side="top" align="start">
+            <EmojiPickerWrapper onEmojiSelect={insertEmoji} />
+          </PopoverContent>
+        </Popover>
 
         <Textarea
           ref={textareaRef}
