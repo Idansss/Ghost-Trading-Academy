@@ -13,9 +13,12 @@ import { AppError } from "@/server/core/app-error";
 void env.nextAuthSecret;
 void env.nextAuthUrl;
 
+// CLAUDE FIX: email/password are optional so the 2FA loginToken path (which
+// provides neither) passes schema validation. The authorize body enforces the
+// correct fields for each path before using them.
 const credentialsSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
+  email: z.string().email().optional(),
+  password: z.string().min(6).optional(),
   otpCode: z.string().optional(),
   loginToken: z.string().optional(),
 });
@@ -72,6 +75,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             accountSize: userFromToken.accountSize,
             riskPerTrade: userFromToken.riskPerTrade,
           };
+        }
+
+        // CLAUDE FIX: Guard required — email/password are optional in the schema
+        // so the loginToken path can pass validation. Reject here if absent.
+        if (!parsed.data.email || !parsed.data.password) {
+          return null;
         }
 
         const user = await prisma.user.findUnique({

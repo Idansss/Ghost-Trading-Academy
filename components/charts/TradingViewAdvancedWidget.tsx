@@ -79,6 +79,7 @@ function TradingViewAdvancedWidgetBase({
       save_image: false,
       withdateranges: true,
       details: false,
+      hotlist: false,
       calendar: false,
     })
 

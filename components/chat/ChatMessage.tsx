@@ -118,8 +118,10 @@ export function ChatMessage({
   return (
     <div
       id={`message-${message.id}`}
+      // CLAUDE FIX: removed "ml-11" on grouped messages — the w-8 placeholder in the flex row
+      // already keeps the body aligned; the extra margin was double-indenting follow-up messages.
       className={`group relative rounded-2xl px-3 py-2 transition ${
-        grouped ? "ml-11" : ""
+        grouped ? "mt-0.5" : "mt-1"
       } ${message.isPending ? "opacity-70" : ""} ${highlighted ? "bg-yellow-200/40" : "hover:bg-muted/40"}`}
     >
       <div className="flex gap-3">

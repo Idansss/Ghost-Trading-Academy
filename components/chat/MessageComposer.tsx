@@ -1,7 +1,8 @@
 "use client";
 
 import { Paperclip, Send, X } from "lucide-react";
-import Image from "next/image";
+// CLAUDE FIX: removed next/image import — the composer preview uses a local blob: URL
+// which next/image rejects (hostname "localhost" not in remotePatterns). Use <img> instead.
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -198,12 +199,12 @@ export function MessageComposer({
 
       {image ? (
         <div className="flex items-center gap-2 rounded-lg border border-border p-2">
-          <Image
+          {/* CLAUDE FIX: plain <img> for the local blob preview — no domain validation */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src={image.localUrl}
             alt={image.name}
-            width={64}
-            height={64}
-            className="max-w-[96px] rounded-md object-cover"
+            className="h-16 w-16 max-w-[96px] rounded-md object-cover"
           />
           <div className="min-w-0 flex-1 text-xs text-muted-foreground">
             <p className="truncate">{image.name}</p>
@@ -236,7 +237,16 @@ export function MessageComposer({
             setImage(null);
             reset();
 
-            const dimensions = await readImageDimensions(file);
+            // CLAUDE FIX: readImageDimensions was outside the try/catch, so any failure
+            // (e.g. CSP blocking blob: URLs, unsupported format) silently killed the entire
+            // handler with no preview, no upload, and no error toast. Fall back to 0×0 so
+            // the upload still proceeds and the server stores actual dimensions.
+            let dimensions = { width: 0, height: 0 };
+            try {
+              dimensions = await readImageDimensions(file);
+            } catch {
+              // non-fatal — upload still proceeds with unknown dimensions
+            }
             const localUrl = URL.createObjectURL(file);
             setImage({
               localUrl,

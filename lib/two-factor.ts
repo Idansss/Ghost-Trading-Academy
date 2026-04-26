@@ -43,11 +43,14 @@ export async function toQrDataUrl(otpAuthUrl: string) {
 
 export function verifyTOTP(code: string, encryptedSecret: string) {
   const secret = decryptSecret(encryptedSecret);
-  return verifySync({ token: code, secret }).valid;
+  // CLAUDE FIX: epochTolerance:30 accepts codes from ±1 time step (±30 s), preventing
+  // spurious rejections when the server clock and authenticator app drift slightly.
+  return verifySync({ token: code, secret, epochTolerance: 30 }).valid;
 }
 
 export function verifyTOTPPlain(code: string, secret: string) {
-  return verifySync({ token: code, secret }).valid;
+  // CLAUDE FIX: epochTolerance:30 accepts codes from ±1 time step (±30 s).
+  return verifySync({ token: code, secret, epochTolerance: 30 }).valid;
 }
 
 export function generateBackupCodes(count = 10) {

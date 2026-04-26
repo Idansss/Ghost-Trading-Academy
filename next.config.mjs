@@ -56,7 +56,11 @@ const nextConfig = {
           {
             key: "Content-Security-Policy",
             value:
-              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https:; font-src 'self' data: https:; connect-src 'self' https: wss:; frame-src https://*.tradingview.com; frame-ancestors 'none';",
+              // CLAUDE FIX: added blob: to img-src — blob: object URLs are created for chat image
+              // previews (readImageDimensions + composer preview). Without this, CSP blocks the
+              // img.onload, readImageDimensions rejects outside the try/catch, and the upload
+              // silently dies with no preview, no upload, and no error toast shown to the user.
+              "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; img-src 'self' blob: data: https:; font-src 'self' data: https:; connect-src 'self' https: wss:; frame-src https://*.tradingview.com; frame-ancestors 'none';",
           },
         ],
       },
