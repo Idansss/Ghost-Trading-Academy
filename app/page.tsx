@@ -399,8 +399,14 @@ export default async function HomePage() {
       <footer className="border-t border-border/60 px-4 py-8 sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 sm:flex-row">
           <div className="flex items-center gap-2.5">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-primary/15 text-xs font-bold text-primary">
-              G
+            <span className="relative grid h-7 w-7 shrink-0 place-items-center overflow-hidden rounded-xl bg-black ring-1 ring-border/60">
+              <Image
+                src="/brand/logo.png"
+                alt=""
+                width={28}
+                height={28}
+                className="h-full w-full object-contain p-0.5"
+              />
             </span>
             <span className="text-sm font-semibold">{platformName}</span>
           </div>
