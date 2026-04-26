@@ -1,12 +1,17 @@
 -- CLAUDE FIX: TradingViewWebhook and WebhookLog tables were defined in schema.prisma
 -- but never had a migration file, so the tables never existed in production.
--- This migration creates them so the /admin/integrations/tradingview page can function.
+-- Made idempotent after initial apply failed because the enum already existed
+-- (created via a prior prisma db push). Every statement is now safe to re-run.
 
--- CreateEnum
-CREATE TYPE "WebhookLogStatus" AS ENUM ('SUCCESS', 'INVALID_SECRET', 'INVALID_PAYLOAD', 'RATE_LIMITED', 'ERROR');
+-- CreateEnum (idempotent)
+DO $$ BEGIN
+    CREATE TYPE "WebhookLogStatus" AS ENUM ('SUCCESS', 'INVALID_SECRET', 'INVALID_PAYLOAD', 'RATE_LIMITED', 'ERROR');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- CreateTable
-CREATE TABLE "TradingViewWebhook" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "TradingViewWebhook" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "webhookSecret" TEXT NOT NULL,
@@ -19,8 +24,8 @@ CREATE TABLE "TradingViewWebhook" (
     CONSTRAINT "TradingViewWebhook_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "WebhookLog" (
+-- CreateTable (idempotent)
+CREATE TABLE IF NOT EXISTS "WebhookLog" (
     "id" TEXT NOT NULL,
     "webhookId" TEXT NOT NULL,
     "status" "WebhookLogStatus" NOT NULL,
@@ -33,17 +38,20 @@ CREATE TABLE "WebhookLog" (
     CONSTRAINT "WebhookLog_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE UNIQUE INDEX "TradingViewWebhook_userId_key" ON "TradingViewWebhook"("userId");
+-- CreateIndex (idempotent)
+CREATE UNIQUE INDEX IF NOT EXISTS "TradingViewWebhook_userId_key" ON "TradingViewWebhook"("userId");
+CREATE UNIQUE INDEX IF NOT EXISTS "TradingViewWebhook_webhookSecret_key" ON "TradingViewWebhook"("webhookSecret");
+CREATE INDEX IF NOT EXISTS "WebhookLog_webhookId_createdAt_idx" ON "WebhookLog"("webhookId", "createdAt");
 
--- CreateIndex
-CREATE UNIQUE INDEX "TradingViewWebhook_webhookSecret_key" ON "TradingViewWebhook"("webhookSecret");
+-- AddForeignKey (idempotent — silently skips if constraint already exists)
+DO $$ BEGIN
+    ALTER TABLE "TradingViewWebhook" ADD CONSTRAINT "TradingViewWebhook_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- CreateIndex
-CREATE INDEX "WebhookLog_webhookId_createdAt_idx" ON "WebhookLog"("webhookId", "createdAt");
-
--- AddForeignKey
-ALTER TABLE "TradingViewWebhook" ADD CONSTRAINT "TradingViewWebhook_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "WebhookLog" ADD CONSTRAINT "WebhookLog_webhookId_fkey" FOREIGN KEY ("webhookId") REFERENCES "TradingViewWebhook"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "WebhookLog" ADD CONSTRAINT "WebhookLog_webhookId_fkey" FOREIGN KEY ("webhookId") REFERENCES "TradingViewWebhook"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
