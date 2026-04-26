@@ -2,17 +2,13 @@ import sanitize from "sanitize-html";
 import { AppError } from "@/server/core/app-error";
 import { env } from "@/lib/env";
 
-const legacyUploadthingHosts = new Set(["utfs.io", "uploadthing.com", "ufs.sh"]);
+// CLAUDE FIX: renamed from isLegacyUploadthingUrl and dropped the configurable
+// UPLOADTHING_CDN_DOMAIN env var (UploadThing is fully removed). The hardcoded
+// host set remains so existing DB records pointing to the old CDN still display.
+const legacyCdnHosts = new Set(["utfs.io", "uploadthing.com", "ufs.sh"]);
 
-function isLegacyUploadthingUrl(url: URL): boolean {
-  const configured = env.uploadthingCdnDomain?.replace(/^https?:\/\//, "").replace(/\/$/, "");
-  if (
-    configured &&
-    (url.hostname === configured || url.hostname.endsWith(`.${configured}`))
-  ) {
-    return true;
-  }
-  return legacyUploadthingHosts.has(url.hostname) || url.hostname.endsWith(".ufs.sh");
+function isLegacyCdnUrl(url: URL): boolean {
+  return legacyCdnHosts.has(url.hostname) || url.hostname.endsWith(".ufs.sh");
 }
 
 function isSupabasePublicObjectUrl(url: URL): boolean {
@@ -37,7 +33,7 @@ function isSupabasePublicObjectUrl(url: URL): boolean {
 export function isTrustedMediaUrl(urlString: string): boolean {
   try {
     const url = new URL(urlString);
-    return isLegacyUploadthingUrl(url) || isSupabasePublicObjectUrl(url);
+    return isLegacyCdnUrl(url) || isSupabasePublicObjectUrl(url);
   } catch {
     return false;
   }

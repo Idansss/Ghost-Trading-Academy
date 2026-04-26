@@ -47,9 +47,6 @@ const serverEnvSchema = z.object({
   UPSTASH_REDIS_REST_URL: z.string().url().optional(),
   UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
   NEXT_PUBLIC_APP_URL: z.string().url().optional(),
-  // Legacy UploadThing CDN URLs may still exist in the database.
-  UPLOADTHING_CDN_DOMAIN: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
-  NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN: z.string().optional().or(z.literal("")).transform((v) => v || undefined),
   // Sentry error monitoring — all optional; app works without them.
   SENTRY_DSN: z.string().url().optional().or(z.literal("")).transform((v) => v || undefined),
   NEXT_PUBLIC_SENTRY_DSN: z.string().url().optional().or(z.literal("")).transform((v) => v || undefined),
@@ -77,8 +74,6 @@ const parsedEnv = serverEnvSchema.parse({
   UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
   UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
   NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
-  UPLOADTHING_CDN_DOMAIN: process.env.UPLOADTHING_CDN_DOMAIN,
-  NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN: process.env.NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN,
   SENTRY_DSN: process.env.SENTRY_DSN,
   NEXT_PUBLIC_SENTRY_DSN: process.env.NEXT_PUBLIC_SENTRY_DSN,
   SENTRY_AUTH_TOKEN: process.env.SENTRY_AUTH_TOKEN,
@@ -107,6 +102,5 @@ export const env = {
   upstashRedisToken: parsedEnv.UPSTASH_REDIS_REST_TOKEN,
   appUrl: parsedEnv.NEXTAUTH_URL,
   publicAppUrl: parsedEnv.NEXT_PUBLIC_APP_URL ?? parsedEnv.NEXTAUTH_URL,
-  uploadthingCdnDomain:
-    parsedEnv.UPLOADTHING_CDN_DOMAIN ?? parsedEnv.NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN,
+  // CLAUDE FIX: removed uploadthingCdnDomain — UploadThing fully replaced by Supabase Storage
 } as const;

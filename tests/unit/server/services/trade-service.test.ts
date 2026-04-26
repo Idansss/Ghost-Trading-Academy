@@ -134,7 +134,8 @@ describe("TradeService.createTrade", () => {
     ).rejects.toMatchObject({ statusCode: 400 });
   });
 
-  it("accepts UploadThing CDN image URLs", async () => {
+  // CLAUDE FIX: renamed — utfs.io is now a legacy CDN kept for backward compat only
+  it("accepts legacy CDN image URLs (backward compat)", async () => {
     const create = vi.fn().mockResolvedValue(makeTrade());
     const service = new TradeService(makeDeps({ create }));
 

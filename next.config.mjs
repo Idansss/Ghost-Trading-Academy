@@ -4,13 +4,7 @@ import { withSentryConfig } from "@sentry/nextjs";
 /** @type {import('next').NextConfig} */
 // AUDIT FIX: Chat images should only load from trusted remotes. The previous
 // wildcard hostname allowed any remote image domain in Next/Image.
-const uploadthingDomain = (
-  process.env.NEXT_PUBLIC_UPLOADTHING_CDN_DOMAIN ??
-  process.env.UPLOADTHING_CDN_DOMAIN ??
-  ""
-)
-  .replace(/^https?:\/\//, "")
-  .replace(/\/$/, "");
+// CLAUDE FIX: removed uploadthingDomain variable — UploadThing fully replaced by Supabase Storage.
 
 function supabaseImageHost() {
   const raw = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,6 +24,8 @@ const nextConfig = {
   transpilePackages: ["lightweight-charts"],
   images: {
     remotePatterns: [
+      // CLAUDE FIX: kept utfs.io and ufs.sh for backward compat — existing DB records
+      // may still point to these legacy CDN domains. New uploads go to Supabase Storage.
       {
         protocol: "https",
         hostname: "utfs.io",
@@ -38,14 +34,6 @@ const nextConfig = {
         protocol: "https",
         hostname: "**.ufs.sh",
       },
-      ...(uploadthingDomain
-        ? [
-            {
-              protocol: "https",
-              hostname: uploadthingDomain,
-            },
-          ]
-        : []),
       ...(supabaseHost
         ? [
             {

@@ -271,7 +271,8 @@ describe("SignalService.createSignal", () => {
       timeframe: "4H",
       rrRatio: 2.5,
       reasoning: "Strong support level",
-      chartImageUrl: "https://utfs.io/f/chart-image",
+      // CLAUDE FIX: updated from utfs.io to Supabase Storage URL — UploadThing removed
+      chartImageUrl: "https://testproj.supabase.co/storage/v1/object/public/desk-media/trades/admin-1/chart-image.png",
       status: "ACTIVE" as never,
       isPremiumOnly: true,
     };
