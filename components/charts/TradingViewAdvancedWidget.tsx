@@ -39,8 +39,16 @@ function TradingViewAdvancedWidgetBase({
     return interval
   })()
 
+  // CLAUDE FIX: Normalize symbols — if admin passes "BTC", treat as "BTCUSDT" on Binance
   const cleanSymbol = symbol.toUpperCase().replace(/[^A-Z0-9:]/g, "")
-  const fullSymbol = cleanSymbol.includes(":") ? cleanSymbol : `BINANCE:${cleanSymbol}`
+  let fullSymbol: string
+  if (cleanSymbol.includes(":")) {
+    fullSymbol = cleanSymbol
+  } else {
+    const quoteCurrencies = ["USDT", "USDC", "USD", "BUSD", "FDUSD", "DAI"]
+    const hasQuote = quoteCurrencies.some((q) => cleanSymbol.endsWith(q))
+    fullSymbol = hasQuote ? `BINANCE:${cleanSymbol}` : `BINANCE:${cleanSymbol}USDT`
+  }
   const widgetId = containerId ?? `tv_adv_${cleanSymbol.replace(/[^a-zA-Z0-9]/g, "_")}_${tvInterval}`
 
   // CLAUDE FIX 3: stringify studies so the effect only re-runs when contents

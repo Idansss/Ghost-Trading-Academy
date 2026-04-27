@@ -180,10 +180,27 @@ export function OutlookForm({
         <div className="space-y-3">
           {coinsFieldArray.fields.map((field, index) => (
             <div key={field.id} className="grid grid-cols-1 gap-3 md:grid-cols-[120px_1fr_auto]">
-              <Input
-                placeholder="BTC/USDT"
-                {...form.register(`coinsToWatch.${index}.coin`)}
-              />
+              {/* CLAUDE FIX: auto-uppercase coin input; hint guides admins to enter full pairs */}
+              <div className="space-y-1">
+                <Input
+                  placeholder="BTCUSDT"
+                  {...form.register(`coinsToWatch.${index}.coin`)}
+                  onChange={(e) =>
+                    form.setValue(
+                      `coinsToWatch.${index}.coin`,
+                      e.target.value.toUpperCase(),
+                      { shouldDirty: true },
+                    )
+                  }
+                />
+                {index === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Full pair e.g.{" "}
+                    <code className="bg-muted px-1 rounded">BTCUSDT</code>.
+                    Bare coin names (BTC) auto-append USDT on the chart.
+                  </p>
+                )}
+              </div>
               <Input
                 placeholder="OB at 96,200 - watching for retest entry"
                 {...form.register(`coinsToWatch.${index}.note`)}
