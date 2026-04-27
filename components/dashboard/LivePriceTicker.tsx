@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowDownRight, ArrowUpRight, WifiOff } from "lucide-react";
 import { DEFAULT_TICKER_SYMBOLS, SUPPORTED_TICKER_SYMBOLS } from "@/lib/constants";
+import { CoinLogo } from "@/components/ui/CoinLogo";
 import { cn } from "@/lib/utils";
 
 type TickerItem = {
@@ -273,15 +274,18 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
               key={item.symbol}
               className="min-w-[148px] flex-1 rounded-xl border border-border bg-card px-2.5 py-1.5 sm:min-w-[155px] md:min-w-[112px]"
             >
-              {/* Mobile: full pair label on one line with % — price on its own row (no vertical squeeze) */}
+              {/* CLAUDE FIX: coin_logo_component — Mobile */}
               <div className="flex flex-col gap-0.5 md:hidden">
-                <div className="flex items-baseline justify-between gap-2">
-                  <p
-                    className="min-w-0 break-words text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground"
-                    title={item.label}
-                  >
-                    {item.label}
-                  </p>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <CoinLogo symbol={item.symbol} size={14} />
+                    <p
+                      className="min-w-0 break-words text-[11px] font-semibold uppercase leading-tight tracking-wide text-muted-foreground"
+                      title={item.label}
+                    >
+                      {item.label}
+                    </p>
+                  </div>
                   {changeBlock}
                 </div>
                 <p className="text-sm font-semibold tabular-nums" data-number="true">
@@ -289,18 +293,21 @@ export function LivePriceTicker({ symbols }: { symbols: string[] }) {
                 </p>
               </div>
 
-              {/* Desktop: unchanged — label + price column, % on the side */}
+              {/* CLAUDE FIX: coin_logo_component — Desktop */}
               <div className="hidden min-w-0 items-center justify-between gap-1.5 md:flex">
-                <div className="min-w-0">
-                  <p
-                    className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
-                    title={item.label}
-                  >
-                    {item.label}
-                  </p>
-                  <p className="mt-0.5 text-sm font-semibold tabular-nums" data-number="true">
-                    {item.price ? `$${formatPrice(item.price)}` : "--"}
-                  </p>
+                <div className="min-w-0 flex items-center gap-1.5">
+                  <CoinLogo symbol={item.symbol} size={16} />
+                  <div className="min-w-0">
+                    <p
+                      className="truncate text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground"
+                      title={item.label}
+                    >
+                      {item.label}
+                    </p>
+                    <p className="mt-0.5 text-sm font-semibold tabular-nums" data-number="true">
+                      {item.price ? `$${formatPrice(item.price)}` : "--"}
+                    </p>
+                  </div>
                 </div>
                 {changeBlock}
               </div>

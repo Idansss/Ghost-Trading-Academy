@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { CoinLogo } from "@/components/ui/CoinLogo";
 import { fetchJson } from "@/lib/client-api";
 import { formatPercent } from "@/lib/utils";
 
@@ -69,9 +70,13 @@ export function WinsFeed({
                   <AvatarFallback>{initials}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
+                  {/* CLAUDE FIX: coin_logo_component */}
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-medium">{win.user.name}</p>
-                    <Badge variant="success">{win.coin}</Badge>
+                    <div className="flex items-center gap-1.5">
+                      <CoinLogo symbol={win.coin} size={18} />
+                      <Badge variant="success">{win.coin}</Badge>
+                    </div>
                     <Badge variant="success">{formatPercent(win.pnlPercent)}</Badge>
                     {!win.isApproved && (
                       <Badge variant="muted" className="text-xs">

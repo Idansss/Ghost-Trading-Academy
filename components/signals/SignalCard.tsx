@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CoinLogo } from "@/components/ui/CoinLogo";
 // CLAUDE IMPROVEMENT: Phase 3 — TradingView and copy-levels actions on each card.
 import { SignalActions } from "@/components/signals/SignalActions";
 import { fetchJson } from "@/lib/client-api";
@@ -55,7 +56,11 @@ export function SignalCard({ signal }: { signal: SignalWithTaken }) {
             {bullish ? <ArrowUpRight className="h-5 w-5" /> : <ArrowDownRight className="h-5 w-5" />}
           </div>
           <div>
-            <CardTitle className="text-xl">{signal.coin}</CardTitle>
+            {/* CLAUDE FIX: coin_logo_component */}
+            <div className="flex items-center gap-2">
+              <CoinLogo symbol={signal.coin} size={28} />
+              <CardTitle className="text-xl">{signal.coin}</CardTitle>
+            </div>
             <div className="mt-2 flex flex-wrap gap-2">
               <Badge variant={bullish ? "success" : "danger"}>
                 <span className="status-dot bg-current" />

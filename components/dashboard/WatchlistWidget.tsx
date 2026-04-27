@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CoinLogo } from "@/components/ui/CoinLogo";
 import { fetchJson } from "@/lib/client-api";
 
 type WatchlistItem = { id: string; symbol: string };
@@ -21,7 +22,9 @@ export function WatchlistWidget() {
       <CardContent className="space-y-2">
         {items.length ? (
           items.map((item) => (
-            <div key={item.id} className="text-sm">
+            // CLAUDE FIX: coin_logo_component
+            <div key={item.id} className="flex items-center gap-2 text-sm">
+              <CoinLogo symbol={item.symbol} size={20} />
               {item.symbol}
             </div>
           ))

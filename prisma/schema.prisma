@@ -335,6 +335,10 @@ model Trade {
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, month])
+  // CLAUDE FIX: add_performance_indexes — timeline queries, outcome filters, coin searches
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, outcome])
+  @@index([coin])
 }
 
 model WeeklyReview {
@@ -402,6 +406,8 @@ model Signal {
   @@index([status, postedAt])
   @@index([postedBy])
   @@index([closedAt])
+  // CLAUDE FIX: add_performance_indexes — coin-based filtering on signals
+  @@index([coin])
 }
 
 enum SignalEmailAlertType {
@@ -581,6 +587,8 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, isRead])
+  // CLAUDE FIX: add_performance_indexes — notification list sorted by time
+  @@index([userId, isRead, createdAt(sort: Desc)])
 }
 
 model NotificationPreference {

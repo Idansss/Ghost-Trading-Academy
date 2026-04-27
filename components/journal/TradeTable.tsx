@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { ImageIcon } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { CoinLogo } from "@/components/ui/CoinLogo";
 import {
   Table,
   TableBody,
@@ -156,7 +157,9 @@ export function TradeTable({
               <TableCell>{format(new Date(trade.tradeDate), "MMM d, yyyy")}</TableCell>
               <TableCell>
                 <div className="space-y-1">
+                  {/* CLAUDE FIX: coin_logo_component */}
                   <div className="flex items-center gap-2">
+                    <CoinLogo symbol={trade.coin} size={20} />
                     <p className="font-medium">{trade.coin}</p>
                     {trade.chartImageUrl ? (
                       <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
