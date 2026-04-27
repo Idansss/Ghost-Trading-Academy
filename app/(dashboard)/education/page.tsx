@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { BookOpen, Plus, Settings2 } from "lucide-react";
+import { BookOpen, FileText, Plus, Settings2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -70,6 +70,15 @@ export default function EducationPage() {
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["education-courses"],
     queryFn: () => fetchJson<CoursesResponse>("/api/education/courses"),
+  });
+
+  // CLAUDE FIX: Mark course complete when user opens the course-level handout PDF
+  const openPdfMutation = useMutation({
+    mutationFn: (courseId: string) =>
+      fetchJson(`/api/education/courses/${courseId}/complete`, { method: "POST" }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["education-courses"] });
+    },
   });
 
   const quizMutation = useMutation({
@@ -146,22 +155,44 @@ export default function EducationPage() {
                   </div>
                   {course.handoutPdfUrl ? (
                     <div>
-                      <Button asChild variant="outline" size="sm">
-                        <a href={course.handoutPdfUrl} target="_blank" rel="noreferrer">
-                          Open course PDF
-                        </a>
+                      {/* CLAUDE FIX: Opens PDF and marks the course complete so the
+                          progress bar updates from "0 of 0 modules" to "1 of 1 100%" */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          window.open(course.handoutPdfUrl!, "_blank", "noopener,noreferrer");
+                          if (!course.enrollment?.completedAt) {
+                            openPdfMutation.mutate(course.id);
+                          }
+                        }}
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Open course PDF
                       </Button>
                     </div>
                   ) : null}
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                      <span>
-                        {course.progress.completedModules} of {course.progress.totalModules} modules completed
-                      </span>
-                      <span>{course.progress.percent}%</span>
-                    </div>
-                    <Progress value={course.progress.percent} />
-                  </div>
+                    {/* CLAUDE FIX: Courses with no modules but a handout PDF treat the
+                        PDF as a single-module resource — show 100% once opened */}
+                    {(() => {
+                      const total = course.progress.totalModules > 0 ? course.progress.totalModules : 1;
+                      const completed = course.progress.totalModules > 0
+                        ? course.progress.completedModules
+                        : (course.enrollment?.completedAt ? 1 : 0);
+                      const pct = course.progress.totalModules > 0
+                        ? course.progress.percent
+                        : (course.enrollment?.completedAt ? 100 : 0);
+                      return (
+                        <>
+                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                            <span>{completed} of {total} modules completed</span>
+                            <span>{pct}%</span>
+                          </div>
+                          <Progress value={pct} />
+                        </>
+                      );
+                    })()}</div>
                   {course.enrollment?.completedAt ? (
                     <div>
                       <Button asChild variant="outline" size="sm">

@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { ChartSkeleton } from "@/components/charts/ChartSkeleton";
+// CLAUDE FIX: Use shared dismissible banner instead of inline tip
+import { TradingViewSignInBanner } from "@/components/charts/TradingViewSignInBanner";
 import { fetchJson } from "@/lib/client-api";
 import { normalizeChartSymbol } from "@/lib/chart-utils";
 
@@ -135,14 +137,8 @@ export default function WatchlistPage() {
         </CardContent>
       </Card>
 
-      {/* CLAUDE FIX: Inform members they can sign into TradingView to persist drawings across sessions */}
-      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground mb-4">
-        <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-        <p>
-          <span className="font-medium text-foreground">Tip:</span> Sign in to TradingView from inside any chart (
-          <span className="font-medium">top-right of the chart</span>) to save your drawings, indicators, and chart layouts across sessions. A free TradingView account is enough — no upgrade needed.
-        </p>
-      </div>
+      {/* CLAUDE FIX: Dismissible banner with direct sign-in link */}
+      <TradingViewSignInBanner />
 
       <div className="grid gap-3">
         {(watchlistQuery.data?.items ?? []).map((item) => {

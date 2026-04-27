@@ -52,7 +52,9 @@ export default async function OnboardingPage() {
       where: { isPublished: true },
       orderBy: { order: "asc" },
       take: 3,
-      select: { id: true, title: true, description: true },
+      // CLAUDE FIX: Include handoutPdfUrl so the onboarding step can open the
+      // PDF and auto-advance the step without requiring a manual "Mark complete"
+      select: { id: true, title: true, description: true, handoutPdfUrl: true },
     }),
   ]);
   const onboarding = getOnboardingSnapshot(

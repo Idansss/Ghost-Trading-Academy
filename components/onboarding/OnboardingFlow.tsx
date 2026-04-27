@@ -10,6 +10,7 @@ import {
   ArrowUpRight,
   BookOpen,
   CheckCircle2,
+  FileText,
   Lightbulb,
   Target,
   UserCircle2,
@@ -62,7 +63,7 @@ type OnboardingSnapshot = {
 };
 
 // CLAUDE FIX: Content lives in Courses, not standalone Resource records.
-type FeaturedCourse = { id: string; title: string; description: string };
+type FeaturedCourse = { id: string; title: string; description: string; handoutPdfUrl: string | null };
 
 // CLAUDE FIX: Removed local profileStepSchema — ProfileForm uses the canonical
 // profileSchema from lib/validators.ts which is the same schema the API validates.
@@ -437,20 +438,19 @@ export function OnboardingFlow({
                       <p className="text-sm text-muted-foreground">{featuredSignal.reasoning}</p>
                     </div>
 
+                    {/* CLAUDE FIX: Auto-completes when the user opens any signal detail
+                        page — SignalViewedTracker fires after 1.5s. No manual button. */}
                     <div className="flex flex-wrap gap-3">
-                      <Button asChild variant="outline">
+                      <Button asChild>
                         <Link href={`/signals/${featuredSignal.id}`}>Open full signal</Link>
                       </Button>
-                      <Button
-                        disabled={completeStepMutation.isPending}
-                        onClick={async () => {
-                          await completeStepMutation.mutateAsync("FIRST_SIGNAL_VIEWED");
-                          toast.success("Signal review step completed.");
-                        }}
-                      >
-                        Mark as viewed
+                      <Button asChild variant="outline">
+                        <Link href="/signals">Browse all signals</Link>
                       </Button>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Opening any signal detail page will automatically complete this step.
+                    </p>
                   </CardContent>
                 </Card>
               ) : (
@@ -460,13 +460,9 @@ export function OnboardingFlow({
                     <p className="text-sm text-muted-foreground">
                       The desk has not published an active or pending signal yet.
                     </p>
-                    <Button
-                      disabled={completeStepMutation.isPending}
-                      onClick={async () => {
-                        await completeStepMutation.mutateAsync("FIRST_SIGNAL_VIEWED");
-                      }}
-                    >
-                      Continue anyway
+                    {/* CLAUDE FIX: Send them to /signals so SignalViewedTracker can auto-fire */}
+                    <Button asChild>
+                      <Link href="/signals">Browse signals</Link>
                     </Button>
                   </CardContent>
                 </Card>
@@ -474,9 +470,8 @@ export function OnboardingFlow({
             </div>
           ) : null}
 
-          {/* CLAUDE FIX: was querying the empty Resource table. Now shows published
-              Courses so members see real content ("Price action" etc.) and can mark
-              the step complete after visiting education. */}
+          {/* CLAUDE FIX: Opens the course PDF and auto-advances the onboarding step —
+              no manual "Mark as complete" button required. */}
           {activeStepItem?.key === "FIRST_RESOURCE_COMPLETED" ? (
             <div className="space-y-6">
               {featuredCourses.length > 0 ? (
@@ -489,11 +484,25 @@ export function OnboardingFlow({
                           <p className="text-sm text-muted-foreground">{course.description}</p>
                         </div>
                         <div className="mt-auto flex flex-col gap-2">
-                          <Button asChild variant="outline">
-                            <Link href="/education">
-                              Open in education
-                            </Link>
-                          </Button>
+                          {course.handoutPdfUrl ? (
+                            <Button
+                              disabled={completeStepMutation.isPending || activeStepItem.done}
+                              onClick={async () => {
+                                window.open(course.handoutPdfUrl!, "_blank", "noopener,noreferrer");
+                                if (!activeStepItem.done) {
+                                  await completeStepMutation.mutateAsync("FIRST_RESOURCE_COMPLETED");
+                                  toast.success("Resource step completed.");
+                                }
+                              }}
+                            >
+                              <FileText className="mr-2 h-4 w-4" />
+                              {completeStepMutation.isPending ? "Opening..." : "Open course PDF"}
+                            </Button>
+                          ) : (
+                            <Button asChild variant="outline">
+                              <Link href="/education">Open in education</Link>
+                            </Button>
+                          )}
                         </div>
                       </CardContent>
                     </Card>
@@ -511,15 +520,12 @@ export function OnboardingFlow({
                   </CardContent>
                 </Card>
               )}
-              <Button
-                disabled={completeStepMutation.isPending || activeStepItem.done}
-                onClick={async () => {
-                  await completeStepMutation.mutateAsync("FIRST_RESOURCE_COMPLETED");
-                  toast.success("Resource step completed.");
-                }}
-              >
-                {activeStepItem.done ? "Step completed" : "Mark as complete"}
-              </Button>
+              {activeStepItem.done ? (
+                <p className="text-sm font-medium text-[color:var(--color-green)]">
+                  <CheckCircle2 className="inline mr-1 h-4 w-4" />
+                  Step completed
+                </p>
+              ) : null}
             </div>
           ) : null}
 

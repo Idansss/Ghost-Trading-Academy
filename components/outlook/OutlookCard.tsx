@@ -1,6 +1,5 @@
 import type { DailyOutlook } from "@prisma/client";
 import { format } from "date-fns";
-import { Info } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +8,8 @@ import { AvoidList } from "@/components/outlook/AvoidList";
 import { CoinWatchItem } from "@/components/outlook/CoinWatchItem";
 import { MemberResponses } from "@/components/outlook/MemberResponses";
 import { OutlookChartCard } from "@/components/outlook/OutlookChartCard";
+// CLAUDE FIX: Use shared dismissible banner instead of inline tip
+import { TradingViewSignInBanner } from "@/components/charts/TradingViewSignInBanner";
 
 export function OutlookCard({
   outlook,
@@ -138,14 +139,8 @@ export function OutlookCard({
 
       {outlook.coinsToWatch.length ? (
         <div className="space-y-4">
-          {/* CLAUDE FIX: Inform members they can sign into TradingView to persist drawings across sessions */}
-          <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
-            <Info className="h-4 w-4 flex-shrink-0 mt-0.5" />
-            <p>
-              <span className="font-medium text-foreground">Tip:</span> Sign in to TradingView from inside any chart (
-              <span className="font-medium">top-right of the chart</span>) to save your drawings, indicators, and chart layouts across sessions. A free TradingView account is enough — no upgrade needed.
-            </p>
-          </div>
+          {/* CLAUDE FIX: Dismissible banner with direct sign-in link */}
+          <TradingViewSignInBanner />
           <div className="space-y-1">
             <h3 className="text-lg font-semibold">Chart Context</h3>
             <p className="text-sm text-muted-foreground">

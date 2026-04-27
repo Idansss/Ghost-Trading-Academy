@@ -1,15 +1,13 @@
 "use client";
 
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
-import type { z } from "zod";
 import { PageTransition } from "@/components/layout/PageTransition";
-import { AvatarUploadButton } from "@/components/profile/AvatarUploadButton";
+// CLAUDE FIX: Replaced the duplicated inline form with the shared ProfileForm component.
+import { ProfileForm } from "@/components/profile/ProfileForm";
 import { Breadcrumb } from "@/components/shared/Breadcrumb";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { MetricCard } from "@/components/shared/MetricCard";
@@ -26,11 +24,7 @@ import {
 import { ErrorState } from "@/components/ui/ErrorState";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { fetchJson } from "@/lib/client-api";
-import { profileSchema } from "@/lib/validators";
-
-type ProfileValues = z.infer<typeof profileSchema>;
 
 // CLAUDE FIX: 2FA setup was using window.prompt() which:
 //   (a) cannot render the QR code image, making setup impossible
@@ -52,6 +46,7 @@ export default function ProfilePage() {
   const [twoFACode, setTwoFACode] = useState("");
   const [twoFAVerifying, setTwoFAVerifying] = useState(false);
   const twoFACodeRef = useRef<HTMLInputElement>(null);
+  // CLAUDE FIX: query stays here; initialValues are passed down to ProfileForm.
   const { data, isError, refetch } = useQuery({
     queryKey: ["profile"],
     queryFn: () =>
@@ -75,64 +70,6 @@ export default function ProfilePage() {
         };
       }>("/api/profile"),
   });
-  const form = useForm<ProfileValues>({
-    resolver: zodResolver(profileSchema),
-    defaultValues: {
-      name: "",
-      avatarUrl: "",
-      accountSize: null,
-      riskPerTrade: 1,
-      leaderboardOptIn: false,
-      emailSignalAlerts: true,
-      currentPassword: "",
-      newPassword: "",
-    },
-  });
-
-  useEffect(() => {
-    if (!data?.profile) return;
-    form.reset({
-      name: data.profile.name,
-      avatarUrl: data.profile.avatarUrl ?? "",
-      accountSize: data.profile.accountSize ?? null,
-      riskPerTrade: data.profile.riskPerTrade,
-      leaderboardOptIn: data.profile.leaderboardOptIn,
-      emailSignalAlerts: data.profile.emailSignalAlerts,
-      currentPassword: "",
-      newPassword: "",
-    });
-  }, [data?.profile, form]);
-
-  const mutation = useMutation({
-    mutationFn: (payload: ProfileValues) =>
-      fetchJson("/api/profile", {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      }),
-    onSuccess: async (_response, payload) => {
-      toast.success("Profile updated.");
-      await queryClient.invalidateQueries({ queryKey: ["profile"] });
-      await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
-      await update({
-        user: {
-          name: payload.name,
-          avatarUrl: payload.avatarUrl || null,
-          accountSize: payload.accountSize ?? null,
-          riskPerTrade: payload.riskPerTrade,
-        },
-      });
-      // Server layouts read `auth()` once per RSC render; refresh so Topbar/Sidebar get the new JWT.
-      router.refresh();
-    },
-  });
-
-  const initials =
-    data?.profile.name
-      ?.split(" ")
-      .slice(0, 2)
-      .map((part) => part[0])
-      .join("") ?? "AV";
-  const avatarPreview = form.watch("avatarUrl") || data?.profile.avatarUrl || "";
   const referralLink =
     typeof window !== "undefined" && data?.profile.referralCode
       ? `${window.location.origin}/auth/register?ref=${data.profile.referralCode}`
@@ -166,114 +103,36 @@ export default function ProfilePage() {
               <CardTitle>Profile Details</CardTitle>
             </CardHeader>
             <CardContent>
-              <form
-                className="space-y-4"
-                onSubmit={form.handleSubmit(async (values) => {
-                  await mutation.mutateAsync(values);
-                })}
-              >
-                <div className="flex items-center gap-4">
-                  <AvatarUploadButton
-                    name={data?.profile.name}
-                    initials={initials}
-                    imageUrl={avatarPreview}
-                    onUpload={(url) => {
-                      form.setValue("avatarUrl", url, {
-                        shouldDirty: true,
-                        shouldTouch: true,
-                        shouldValidate: true,
-                      });
-                    }}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input {...form.register("name")} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Avatar URL</Label>
-                  <Input
-                    {...form.register("avatarUrl")}
-                    placeholder="Paste an image URL or use the camera button above"
-                  />
-                </div>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Account Size</Label>
-                    <Input
-                      type="number"
-                      step="any"
-                      placeholder="10000"
-                      {...form.register("accountSize", {
-                        setValueAs: (value) => (value === "" ? null : Number(value)),
-                      })}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Used as the default balance in the risk calculator.
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Risk Per Trade %</Label>
-                    <Input
-                      type="number"
-                      step="any"
-                      {...form.register("riskPerTrade", { valueAsNumber: true })}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Applied automatically on the calculator and signal sizing sheet.
-                    </p>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-border px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Email signal alerts</p>
-                      <p className="text-xs text-muted-foreground">
-                        Email me when new signals are posted.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={form.watch("emailSignalAlerts")}
-                      onCheckedChange={(checked) =>
-                        form.setValue("emailSignalAlerts", checked, {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-border px-4 py-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">Appear on the leaderboard</p>
-                      <p className="text-xs text-muted-foreground">
-                        Your win rate and trade count will be visible to other members. Your name and avatar will be shown. No PnL amounts are disclosed.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={form.watch("leaderboardOptIn")}
-                      onCheckedChange={(checked) =>
-                        form.setValue("leaderboardOptIn", checked, {
-                          shouldDirty: true,
-                          shouldTouch: true,
-                        })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Current Password</Label>
-                  <Input type="password" {...form.register("currentPassword")} />
-                </div>
-                <div className="space-y-2">
-                  <Label>New Password</Label>
-                  <Input type="password" {...form.register("newPassword")} />
-                </div>
-                <Button disabled={mutation.isPending}>
-                  {mutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
-              </form>
+              {/* CLAUDE FIX: Replaced the duplicated inline form with the shared
+                  ProfileForm. key resets the form when API data arrives so fields
+                  show the real values instead of the empty defaults. */}
+              <ProfileForm
+                key={data ? "loaded" : "loading"}
+                mode="full"
+                initialValues={
+                  data?.profile ?? {
+                    name: "",
+                    riskPerTrade: 1,
+                    leaderboardOptIn: false,
+                    emailSignalAlerts: true,
+                  }
+                }
+                onSuccess={async (payload) => {
+                  toast.success("Profile updated.");
+                  await queryClient.invalidateQueries({ queryKey: ["profile"] });
+                  await queryClient.invalidateQueries({ queryKey: ["leaderboard"] });
+                  await update({
+                    user: {
+                      name: payload.name,
+                      avatarUrl: payload.avatarUrl || null,
+                      accountSize: payload.accountSize ?? null,
+                      riskPerTrade: payload.riskPerTrade,
+                    },
+                  });
+                  // Server layouts read `auth()` once per RSC render; refresh so Topbar/Sidebar get the new JWT.
+                  router.refresh();
+                }}
+              />
             </CardContent>
           </Card>
 
