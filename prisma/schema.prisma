@@ -298,6 +298,19 @@ model SiteConfig {
   updatedAt       DateTime @updatedAt
 }
 
+model LandingReview {
+  id          String   @id @default(cuid())
+  displayName String
+  role        String   @default("Member")
+  rating      Int
+  message     String
+  isApproved  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isApproved, createdAt])
+}
+
 model Trade {
   id          String       @id @default(cuid())
   userId      String

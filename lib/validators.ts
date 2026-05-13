@@ -173,6 +173,12 @@ export const memberWinSchema = z.object({
   imageUrl: z.string().url().optional().nullable(),
 });
 
+export const landingReviewSchema = z.object({
+  displayName: z.string().trim().min(2, "Name is required.").max(80),
+  rating: z.coerce.number().int().min(1).max(5),
+  message: z.string().trim().min(10, "Review must be at least 10 characters.").max(500),
+});
+
 export const memberUpdateSchema = z.object({
   userId: z.string().min(1),
   role: z.nativeEnum(Role),

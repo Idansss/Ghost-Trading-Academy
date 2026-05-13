@@ -15,8 +15,9 @@ import { auth } from "@/lib/auth";
 import { DEFAULT_PLATFORM_NAME } from "@/lib/branding";
 import { getSiteConfig } from "@/lib/site-config";
 import { getSignalTrackRecord } from "@/server/repositories/signal-repository";
-import { redirect } from "next/navigation";
 import { LandingCta } from "@/components/landing/LandingCta";
+import { ReviewSection, type LandingReviewItem } from "@/components/landing/ReviewSection";
+import { getApprovedLandingReviews } from "@/server/repositories/landing-review-repository";
 
 export const revalidate = 3600;
 
@@ -86,14 +87,12 @@ const TESTIMONIALS = [
 
 export default async function HomePage() {
   const session = await auth();
+  const isAuthenticated = Boolean(session?.user);
 
-  if (session?.user) {
-    redirect("/dashboard");
-  }
-
-  const [siteConfig, trackRecord] = await Promise.allSettled([
+  const [siteConfig, trackRecord, landingReviews] = await Promise.allSettled([
     getSiteConfig(),
     getSignalTrackRecord("all"),
+    getApprovedLandingReviews(),
   ]);
 
   const config =
@@ -116,6 +115,17 @@ export default async function HomePage() {
   const ctaLabel = config.ctaLabel;
   const ctaUrl = config.ctaUrl;
   const platformName = config.platformName ?? DEFAULT_PLATFORM_NAME;
+  const testimonialReviews: LandingReviewItem[] = TESTIMONIALS.map((testimonial) => ({
+    id: `default-${testimonial.name}`,
+    displayName: testimonial.name,
+    role: testimonial.role,
+    rating: 5,
+    message: testimonial.quote,
+  }));
+  const reviews =
+    landingReviews.status === "fulfilled"
+      ? [...landingReviews.value, ...testimonialReviews]
+      : testimonialReviews;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -137,10 +147,10 @@ export default async function HomePage() {
           </div>
           <nav className="flex items-center gap-3">
             <Link
-              href="/auth/login"
+              href={isAuthenticated ? "/dashboard" : "/auth/login"}
               className="rounded-xl border border-border px-4 py-2 text-sm font-medium transition hover:border-primary/40 hover:bg-accent/60"
             >
-              Sign In
+              {isAuthenticated ? "Dashboard" : "Sign In"}
             </Link>
             <LandingCta label={ctaLabel} href={ctaUrl} />
           </nav>
@@ -176,10 +186,10 @@ export default async function HomePage() {
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <LandingCta label={ctaLabel} href={ctaUrl} size="lg" />
               <Link
-                href="/auth/login"
+                href={isAuthenticated ? "/dashboard" : "/auth/login"}
                 className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
               >
-                Already a member? Sign in
+                {isAuthenticated ? "Open your dashboard" : "Already a member? Sign in"}
                 <ChevronRight className="h-4 w-4" />
               </Link>
             </div>
@@ -297,47 +307,7 @@ export default async function HomePage() {
         )}
 
         {/* ── Social Proof ───────────────────────────────────────── */}
-        <section id="testimonials" className="px-4 py-20 sm:px-6">
-          <div className="mx-auto max-w-6xl">
-            <div className="mb-12 text-center">
-              <h2 className="text-2xl font-bold sm:text-3xl">
-                What members are saying
-              </h2>
-              <p className="mt-3 text-muted-foreground">
-                Results from real members who show up and do the work.
-              </p>
-            </div>
-
-            <div className="grid gap-5 sm:grid-cols-3">
-              {TESTIMONIALS.map((testimonial) => (
-                <div
-                  key={testimonial.name}
-                  className="surface-card flex flex-col gap-4 rounded-2xl p-6"
-                >
-                  <div className="flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <svg
-                        key={i}
-                        viewBox="0 0 12 12"
-                        className="h-4 w-4 fill-primary"
-                        aria-hidden
-                      >
-                        <path d="M6 0l1.5 4.5H12L8.25 7.5l1.5 4.5L6 9.375 2.25 12l1.5-4.5L0 4.5h4.5z" />
-                      </svg>
-                    ))}
-                  </div>
-                  <blockquote className="flex-1 text-sm leading-relaxed text-muted-foreground">
-                    &ldquo;{testimonial.quote}&rdquo;
-                  </blockquote>
-                  <div>
-                    <p className="text-sm font-semibold">{testimonial.name}</p>
-                    <p className="text-xs text-muted-foreground">{testimonial.role}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <ReviewSection initialReviews={reviews} />
 
         {/* ── What You Get ───────────────────────────────────────── */}
         <section className="px-4 py-20 sm:px-6">
@@ -385,10 +355,10 @@ export default async function HomePage() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
               <LandingCta label={ctaLabel} href={ctaUrl} size="lg" />
               <Link
-                href="/auth/login"
+                href={isAuthenticated ? "/dashboard" : "/auth/login"}
                 className="text-sm text-muted-foreground transition hover:text-foreground"
               >
-                Already a member? Sign in
+                {isAuthenticated ? "Open your dashboard" : "Already a member? Sign in"}
               </Link>
             </div>
           </div>
@@ -414,10 +384,10 @@ export default async function HomePage() {
             &copy; {new Date().getFullYear()} The Thesis Desk. Not financial advice.
           </p>
           <Link
-            href="/auth/login"
+            href={isAuthenticated ? "/dashboard" : "/auth/login"}
             className="text-xs text-muted-foreground transition hover:text-foreground"
           >
-            Member login
+            {isAuthenticated ? "Dashboard" : "Member login"}
           </Link>
         </div>
       </footer>

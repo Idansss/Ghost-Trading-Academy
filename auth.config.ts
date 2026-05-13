@@ -23,9 +23,15 @@ const authConfig = {
       const isAuthed = Boolean(auth?.user);
       const isAuthRoute = pathname.startsWith("/auth");
       const isAdminRoute = pathname.startsWith("/admin");
+      const isPublicRoute =
+        pathname === "/" || pathname.startsWith("/signals/track-record");
       // AUDIT FIX: Treat /api/auth/* as always allowed — NextAuth's own endpoints
       // must never be blocked by this guard.
       if (pathname.startsWith("/api/auth")) {
+        return true;
+      }
+
+      if (isPublicRoute) {
         return true;
       }
 
@@ -36,12 +42,6 @@ const authConfig = {
         if (isAuthed) {
           return NextResponse.redirect(new URL("/dashboard", request.url));
         }
-        return true;
-      }
-
-      // Root "/" is a public landing page — unauthenticated users see it,
-      // authenticated users are redirected in page.tsx.
-      if (pathname === "/") {
         return true;
       }
 
