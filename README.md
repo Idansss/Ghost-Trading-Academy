@@ -1,144 +1,124 @@
 # The Thesis Desk
 
-A full-stack trading community platform for crypto traders: signals,
-trade journal, daily outlook, education hub, analytics, and community.
+A full-stack crypto trading workspace for market outlooks, signals, journaling, education, analytics, and community operations.
 
-## Quick Start
+> **Status:** Active product. The public application is available at [thethesisdesk.xyz](https://thethesisdesk.xyz). Trading information is educational and analytical; it is not financial advice or a guarantee of performance.
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Copy environment variables: `cp .env.example .env`
-4. Fill in your values in `.env`
-5. Push the database: `npx prisma db push`
-6. Seed admin user: `npm run prisma:seed`
-7. Start development server: `npm run dev`
-8. Open: `http://localhost:3000`
+## Product capabilities
 
-## Default Login Credentials (after seed)
+- Market outlooks, trading signals, and structured trade-taking workflows.
+- Personal trade journal with notes, review, and analytics.
+- Education and community content managed through rich-text workflows.
+- Member profiles, notifications, referrals, account recovery, and optional TOTP two-factor authentication.
+- Administrative controls for content, members, operations, and platform health.
+- Progressive-web-app support, email delivery, media storage, observability, and rate limiting.
 
-Admin: `admin@ghosttrading.academy / admin123`
-Premium member: `premium@ghosttrading.academy / member123`
+## Architecture
 
-Change these passwords immediately after first login.
-
-## Tech Stack
-
-- Next.js 14 (App Router)
-- TypeScript
-- Tailwind CSS + shadcn/ui
-- Prisma + PostgreSQL
-- NextAuth.js v5
-- Supabase Storage (file uploads)
-- Resend (transactional email)
-- Recharts (charts)
-- TipTap (rich text notes editor)
-- Framer Motion (animations)
-- React Query (data fetching)
-- Sonner (toast notifications)
-- Zustand (global state)
-
-## Backend Architecture
-
-The API layer now follows a service-oriented backend split inside the existing
-Next.js App Router project:
-
-- `app/api/*` route handlers act as thin controllers
-- `server/core/*` contains request wrappers, response envelopes, validation, auth guards, and logging
-- `server/services/*` contains business logic
-- `server/repositories/*` contains Prisma data access
-
-Refactored routes currently using this pattern:
-
-- `POST /api/auth/register`
-- `GET /api/signals`, `POST /api/signals`, `PATCH /api/signals/:id`, `DELETE /api/signals/:id`
-- `GET /api/signals/:id/take`, `POST /api/signals/:id/take`
-- `GET /api/trades`, `POST /api/trades`, `PATCH /api/trades/:id`, `DELETE /api/trades/:id`
-- `GET /api/profile`, `PATCH /api/profile`
-- `GET /api/notifications`, `PATCH /api/notifications`
-- `GET /api/member-wins`, `POST /api/member-wins`
-
-Response format for the refactored endpoints:
-
-```json
-{
-  "success": true,
-  "data": {}
-}
+```text
+app/                  Next.js pages, layouts, route handlers, and health routes
+components/           Product and shared interface components
+server/core/          Request wrappers, validation, auth guards, and logging
+server/services/      Business and workflow logic
+server/repositories/  Prisma data-access layer
+prisma/               PostgreSQL schema, migrations, and seed tooling
+emails/               Transactional email templates
+tests/                Vitest suites and supporting fixtures
 ```
 
-```json
-{
-  "success": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Validation failed."
-  }
-}
+API handlers are kept thin while business logic lives in services and persistence remains in repositories. Refactored routes use consistent success and error envelopes.
+
+## Stack
+
+| Layer | Technology |
+| --- | --- |
+| Application | Next.js 14, React 18, TypeScript |
+| Interface | Tailwind CSS, Radix UI, Framer Motion, Recharts, TipTap |
+| Data | PostgreSQL, Prisma, TanStack Query, Zustand |
+| Identity | NextAuth.js v5, bcrypt, TOTP, JOSE |
+| Services | Supabase Storage, Resend, Upstash Redis, Sentry |
+| Quality | Vitest, TypeScript, ESLint |
+
+## Local setup
+
+### Prerequisites
+
+- Node.js 20 or newer
+- npm
+- PostgreSQL
+
+### Install and run
+
+```bash
+npm ci
+cp .env.example .env
+npm run prisma:generate
+npm run prisma:migrate
+npm run prisma:seed
+npm run dev
 ```
 
-## Environment Variables
+Open `http://localhost:3000`.
 
-| Variable | Required | Description |
-|---|---|---|
-| DATABASE_URL | Yes | PostgreSQL connection string |
-| NEXTAUTH_SECRET | Yes | Random secret for NextAuth |
-| NEXTAUTH_URL | Yes | Base URL of your app. On Vercel this must be your production domain, not `http://localhost:3000` |
-| NEXT_PUBLIC_SUPABASE_URL | No* | Supabase project URL for Storage (required for uploads) |
-| NEXT_PUBLIC_SUPABASE_ANON_KEY | No* | Supabase anon key (browser uploads) |
-| SUPABASE_SERVICE_ROLE_KEY | No* | Service role key for signed upload URLs on the server |
-| SUPABASE_STORAGE_BUCKET | No | Storage bucket name (defaults to `desk-media`) |
-| RESEND_API_KEY | No | Resend API key for emails |
-| RESEND_FROM_EMAIL | No | From address for emails |
-| NEXT_PUBLIC_CONTACT_LINK | No | WhatsApp or Telegram link for member support |
-| ONESIGNAL_APP_ID | No | OneSignal app UUID for push notifications |
-| ONESIGNAL_REST_API_KEY | No | OneSignal REST API key |
-| UPSTASH_REDIS_REST_URL | No | Upstash Redis URL for rate limiting |
-| UPSTASH_REDIS_REST_TOKEN | No | Upstash Redis token |
-| NEXT_PUBLIC_APP_URL | No | Public app URL (used in OG tags and referral links) |
-| SENTRY_DSN | No | Sentry DSN for server-side error reporting |
-| NEXT_PUBLIC_SENTRY_DSN | No | Same DSN value for client-side error reporting |
-| SENTRY_AUTH_TOKEN | No | CI-only: used to upload source maps to Sentry |
-| SENTRY_ORG | No | Sentry organization slug |
-| SENTRY_PROJECT | No | Sentry project slug |
+The seed command is for isolated development environments only. Review the seed file before running it, replace all example credentials, and never reuse seeded accounts in a public or production deployment.
 
-## Error Monitoring
+## Environment
 
-Sentry is wired up via `instrumentation.ts` (server/edge) and `instrumentation-client.ts` (browser). All five Sentry variables are optional — the app runs without them, errors are simply not forwarded to Sentry.
+Use [`.env.example`](./.env.example) as the variable-name source of truth. Key configuration groups include:
 
-To enable:
+- PostgreSQL and NextAuth;
+- Supabase Storage;
+- Resend email delivery;
+- Upstash Redis rate limiting;
+- OneSignal notifications;
+- Sentry error monitoring and source maps;
+- canonical application and contact URLs.
 
-1. Create a Next.js project at [sentry.io](https://sentry.io)
-2. Copy the DSN from **Project Settings → Client Keys**
-3. Set `SENTRY_DSN` and `NEXT_PUBLIC_SENTRY_DSN` in your deployment environment
-4. For source map uploads in CI, also set `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, and `SENTRY_PROJECT`
+Never commit real credentials. Client-prefixed values are public by design and must not contain service-role or private keys.
 
-The `beforeSend` hook strips `Authorization`, `Cookie`, and request body fields before any event is sent.
+## Commands
+
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start local development |
+| `npm run build` | Generate Prisma client and build the application |
+| `npm run lint` | Run the configured lint command |
+| `npm test` | Run the Vitest suite |
+| `npm run test:coverage` | Run tests with coverage |
+| `npm run prisma:migrate` | Apply reviewed database migrations |
+| `npm run prisma:seed` | Seed an isolated development database |
+
+## Health and observability
+
+- `GET /health` — process liveness
+- `GET /health/ready` — readiness including required dependencies
+- `GET /api/health/db` — database diagnostic
+
+Sentry is optional. When configured, the integration removes authorization, cookie, and request-body fields before events are forwarded. Review filtering whenever request shapes change.
 
 ## Security
 
-- **Rate limiting**: Login (5 req/15 min), 2FA (5 req/15 min), Register (3 req/1 h), API (100 req/1 min) — all via Upstash Redis with graceful fallback when Redis is unavailable.
-- **2FA**: TOTP with encrypted secrets (AES-256), 10 bcrypt-hashed backup codes, verified via challenge/JWT flow.
-- **Referral codes**: 10-character nanoid from a 32-symbol safe alphabet (~50 bits of entropy).
-- **Image uploads**: Only trusted CDN URLs are accepted by API routes (`assertTrustedImageUrl`).
-- **HTML sanitization**: `sanitizeText` (DOMPurify, no tags) for plain text fields; `sanitizeRichText` (safe allowlist) for rich text.
-- **Security headers**: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Permissions-Policy`, and a strict `Content-Security-Policy` applied to all routes.
-
-## Health Checks
-
-- `GET /health` - liveness
-- `GET /health/ready` - readiness (database + Redis connectivity)
-- `GET /api/health/db` - database-only diagnostic endpoint
-
-## Quality Checks
-
-- `npm run lint`
-- `npm test`
-- `npm run test:coverage`
-- `npx tsc --noEmit`
+- Rate-limit authentication, registration, two-factor, and general API traffic.
+- Encrypt TOTP secrets and store only hashed recovery codes.
+- Restrict upload URLs to reviewed storage origins.
+- Sanitize plain text and rich-text HTML before rendering.
+- Apply frame, content-type, referrer, permissions, and content-security policies.
+- Rotate any credential that has appeared in source, documentation, logs, or deployment output.
+- Do not expose demonstration accounts on a public deployment.
 
 ## Deployment
 
-1. Push code to GitHub
-2. Connect the repo to Vercel
-3. Add all environment variables in the Vercel dashboard
-4. Deploy
+1. provision PostgreSQL and apply migrations;
+2. configure authentication and canonical URLs;
+3. configure only the required storage, email, rate-limit, notification, and monitoring services;
+4. run lint, typecheck, tests, and the production build;
+5. verify account recovery, 2FA, uploads, health endpoints, and administrative authorization;
+6. test rollback and database recovery before production use.
+
+See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for deployment-specific guidance.
+
+## Contribution context and licence
+
+The Thesis Desk is maintained collaboratively under TrustCode System Limited. Use commit and pull-request history when describing individual contributions.
+
+No open-source licence is currently granted. Public visibility does not by itself permit reuse, modification, or redistribution.
